@@ -12,7 +12,7 @@ from torch.utils.tensorboard import SummaryWriter
 if __name__ == '__main__':
 
     replay_buffer_size = 10000000
-    episodes = 10000
+    episodes = 3
     warmup = 20
     batch_size = 64
     updates_per_step = 1
@@ -28,7 +28,7 @@ if __name__ == '__main__':
     env_name = "AntMaze_UMazeDense-v4"
 
 
-    env = gym.make(env_name, max_episode_steps=max_episode_steps, render_mode='human')
+    env = gym.make(env_name, max_episode_steps=max_episode_steps, use_contact_forces=True, render_mode='human')
     env = RoboGymObservationWrapper(env)
 
     # print(f"Obervation space: {env.observation_space}")
@@ -63,8 +63,11 @@ if __name__ == '__main__':
             action = agent.select_action(state)  # Sample action from policy
 
             next_state, reward, done, _, _ = env.step(action)  # Step
+            # print(next_state.shape)
             episode_steps += 1
             total_numsteps += 1
+            if reward == 1:
+                done = True
             episode_reward += reward
 
             # Ignore the "done" signal if it comes from hitting the time horizon.

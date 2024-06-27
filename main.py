@@ -28,7 +28,7 @@ if __name__ == '__main__':
     env_name = "AntMaze_UMazeDense-v4"
 
 
-    env = gym.make(env_name, max_episode_steps=max_episode_steps)
+    env = gym.make(env_name, max_episode_steps=max_episode_steps, use_contact_forces=True)
     env = RoboGymObservationWrapper(env)
 
     # print(f"Obervation space: {env.observation_space}")
@@ -46,7 +46,7 @@ if __name__ == '__main__':
     # agent.load_checkpoint()
 
     # Tesnorboard
-    writer = SummaryWriter(f'runs/{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_hidden_size={hidden_size}_lr={learning_rate}')
+    writer = SummaryWriter(f'runs/{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_hidden_size={hidden_size}_lr={learning_rate}_use_cf')
 
     # Memory
     memory = ReplayBuffer(replay_buffer_size, input_size=observation_size, n_actions=env.action_space.shape[0])
@@ -83,6 +83,9 @@ if __name__ == '__main__':
                     updates += 1
 
             next_state, reward, done, _, _ = env.step(action)  # Step
+            if reward == 1:
+                done = True
+                
             episode_steps += 1
             total_numsteps += 1
             episode_reward += reward
