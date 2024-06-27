@@ -22,8 +22,8 @@ if __name__ == '__main__':
     policy = "Gaussian"
     target_update_interval = 1
     automatic_entropy_tuning = False
-    hidden_size = 756
-    learning_rate = 0.0001
+    hidden_size = 256
+    learning_rate = 0.0003
     max_episode_steps=500 # max episode steps
     env_name = "AntMaze_UMazeDense-v4"
 
@@ -36,32 +36,6 @@ if __name__ == '__main__':
 
     observation, info = env.reset()
 
-    # reward_total = 0
-
-    # for i in range(100):
-    #     action = env.action_space.sample()
-    #     observation, reward, done, truncated, info  = env.step(action)
-
-    #     print(f"Observation: {observation}")
-    #     print(f"Reward: {reward}")
-
-    #     reward_total += reward
-
-    # # print(f"Observation: {observation}")
-    # print(f"Total Reward: {reward_total}")
-    # print(f"Observation shape: {observation.shape}")
-    
-
-
-    # print(f"Observation: {obs_pos}")
-    # print(f"Observation(achieved_goal): {obs_achieved_goal}")
-    # print(f"Observation(desired_goal): {obs_desired_goal}")
-    # print(f"Observation(Concatenated): {obs_concatenated}")
-    # print(f"Reward: {reward}")
-    # print(f"Done: {done}")
-    # print(f"Truncated: {truncated}")
-    # print(f"Info: {info}")
-
     observation_size = observation.shape[0]
 
     # # Agent
@@ -72,7 +46,7 @@ if __name__ == '__main__':
     # agent.load_checkpoint()
 
     # Tesnorboard
-    writer = SummaryWriter(f'runs/{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_SAC')
+    writer = SummaryWriter(f'runs/{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_hidden_size={hidden_size}_lr={learning_rate}')
 
     # Memory
     memory = ReplayBuffer(replay_buffer_size, input_size=observation_size, n_actions=env.action_space.shape[0])
