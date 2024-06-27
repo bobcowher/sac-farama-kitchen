@@ -5,7 +5,7 @@ import numpy as np
 from buffer import ReplayBuffer
 import datetime
 from agent import SAC
-from gym_robotics_custom import RoboGym
+from gym_robotics_custom import RoboGymObservationWrapper
 from torch.utils.tensorboard import SummaryWriter
 
 
@@ -24,32 +24,34 @@ if __name__ == '__main__':
     automatic_entropy_tuning = False
     hidden_size = 756
     learning_rate = 0.0001
-    horizon=500 # max episode steps
+    max_episode_steps=500 # max episode steps
+    env_name = "AntMaze_UMazeDense-v4"
 
-    env = RoboGym(env_name="AntMaze_UMazeDense-v4")
 
-    print(f"Obervation space: {env.observation_space}")
+    env = gym.make(env_name, max_episode_steps=max_episode_steps)
+    env = RoboGymObservationWrapper(env)
+
+    # print(f"Obervation space: {env.observation_space}")
     print(f"Action space: {env.action_space}")
 
     observation, info = env.reset()
 
-    reward_total = 0
+    # reward_total = 0
 
-    for i in range(100):
-        action = env.action_space.sample()
-        observation, reward, done, truncated, info  = env.step(action)
-        obs_pos = observation['observation']
-        obs_achieved_goal = observation['achieved_goal']
-        obs_desired_goal = observation['desired_goal']
+    # for i in range(100):
+    #     action = env.action_space.sample()
+    #     observation, reward, done, truncated, info  = env.step(action)
 
-        obs_concatenated = np.concatenate((obs_pos, obs_achieved_goal, obs_desired_goal))
+    #     print(f"Observation: {observation}")
+    #     print(f"Reward: {reward}")
 
-        print(f"Observation(Concatenated): {obs_concatenated}")
-        print(f"Reward: {reward}")
-        reward_total += reward
+    #     reward_total += reward
 
-    # print(f"Observation: {observation}")
-    print(f"Total Reward: {reward_total}")
+    # # print(f"Observation: {observation}")
+    # print(f"Total Reward: {reward_total}")
+    # print(f"Observation shape: {observation.shape}")
+    
+
 
     # print(f"Observation: {obs_pos}")
     # print(f"Observation(achieved_goal): {obs_achieved_goal}")
@@ -60,70 +62,71 @@ if __name__ == '__main__':
     # print(f"Truncated: {truncated}")
     # print(f"Info: {info}")
 
+    observation_size = observation.shape[0]
 
     # # Agent
-    # agent = SAC(env.observation_space.shape[0], env.action_space, gamma=gamma, tau=tau, alpha=alpha, policy=policy,
-                # target_update_interval=target_update_interval, automatic_entropy_tuning=automatic_entropy_tuning,
-                # hidden_size=hidden_size, learning_rate=learning_rate)
+    agent = SAC(observation_size, env.action_space, gamma=gamma, tau=tau, alpha=alpha, policy=policy,
+                target_update_interval=target_update_interval, automatic_entropy_tuning=automatic_entropy_tuning,
+                hidden_size=hidden_size, learning_rate=learning_rate)
 
     # agent.load_checkpoint()
 
-    # # Tesnorboard
-    # writer = SummaryWriter(f'runs/{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_SAC')
+    # Tesnorboard
+    writer = SummaryWriter(f'runs/{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_SAC')
 
-    # # Memory
-    # memory = ReplayBuffer(replay_buffer_size, input_shape=env.observation_space.shape, n_actions=env.action_space.shape[0])
+    # Memory
+    memory = ReplayBuffer(replay_buffer_size, input_size=observation_size, n_actions=env.action_space.shape[0])
 
-    # # Training Loop
-    # total_numsteps = 0
-    # updates = 0
+    # Training Loop
+    total_numsteps = 0
+    updates = 0
 
-    # for i_episode in range(episodes):
-    #     episode_reward = 0
-    #     episode_steps = 0
-    #     done = False
-    #     state = env.reset()
+    for i_episode in range(episodes):
+        episode_reward = 0
+        episode_steps = 0
+        done = False
+        state, _ = env.reset()
 
-    #     while not done:
-    #         if warmup > i_episode:
-    #             action = env.action_space.sample()  # Sample random action
-    #         else:
-    #             action = agent.select_action(state)  # Sample action from policy
+        while not done and episode_steps < max_episode_steps:
+            if warmup > i_episode:
+                action = env.action_space.sample()  # Sample random action
+            else:
+                action = agent.select_action(state)  # Sample action from policy
 
-    #         if memory.can_sample(batch_size=batch_size):
-    #             # Number of updates per step in environment
-    #             for i in range(updates_per_step):
-    #                 # Update parameters of all the networks
-    #                 critic_1_loss, critic_2_loss, policy_loss, ent_loss, alpha = agent.update_parameters(memory,
-    #                                                                                                      batch_size,
-    #                                                                                                      updates)
+            if memory.can_sample(batch_size=batch_size):
+                # Number of updates per step in environment
+                for i in range(updates_per_step):
+                    # Update parameters of all the networks
+                    critic_1_loss, critic_2_loss, policy_loss, ent_loss, alpha = agent.update_parameters(memory,
+                                                                                                         batch_size,
+                                                                                                         updates)
 
-    #                 writer.add_scalar('loss/critic_1', critic_1_loss, updates)
-    #                 writer.add_scalar('loss/critic_2', critic_2_loss, updates)
-    #                 writer.add_scalar('loss/policy', policy_loss, updates)
-    #                 writer.add_scalar('loss/entropy_loss', ent_loss, updates)
-    #                 writer.add_scalar('entropy_temprature/alpha', alpha, updates)
-    #                 updates += 1
+                    writer.add_scalar('loss/critic_1', critic_1_loss, updates)
+                    writer.add_scalar('loss/critic_2', critic_2_loss, updates)
+                    writer.add_scalar('loss/policy', policy_loss, updates)
+                    writer.add_scalar('loss/entropy_loss', ent_loss, updates)
+                    writer.add_scalar('entropy_temprature/alpha', alpha, updates)
+                    updates += 1
 
-    #         next_state, reward, done, _ = env.step(action)  # Step
-    #         episode_steps += 1
-    #         total_numsteps += 1
-    #         episode_reward += reward
+            next_state, reward, done, _, _ = env.step(action)  # Step
+            episode_steps += 1
+            total_numsteps += 1
+            episode_reward += reward
 
-    #         # Ignore the "done" signal if it comes from hitting the time horizon.
-    #         # (https://github.com/openai/spinningup/blob/master/spinup/algos/sac/sac.py)
-    #         mask = 1 if episode_steps == horizon else float(not done)
+            # Ignore the "done" signal if it comes from hitting the time horizon.
+            # (https://github.com/openai/spinningup/blob/master/spinup/algos/sac/sac.py)
+            mask = 1 if episode_steps == max_episode_steps else float(not done)
 
-    #         memory.store_transition(state, action, reward, next_state, mask)  # Append transition to memory
+            memory.store_transition(state, action, reward, next_state, mask)  # Append transition to memory
 
-    #         state = next_state
+            state = next_state
 
-    #     writer.add_scalar('reward/train', episode_reward, i_episode)
-    #     print("Episode: {}, total numsteps: {}, episode steps: {}, reward: {}".format(i_episode, total_numsteps,
-    #                                                                                   episode_steps,
-    #                                                                                   round(episode_reward, 2)))
-    #     if i_episode % 10 == 0:
-    #         agent.save_checkpoint(env_name=env_name)
+        writer.add_scalar('reward/train', episode_reward, i_episode)
+        print("Episode: {}, total numsteps: {}, episode steps: {}, reward: {}".format(i_episode, total_numsteps,
+                                                                                      episode_steps,
+                                                                                      round(episode_reward, 2)))
+        if i_episode % 10 == 0:
+            agent.save_checkpoint(env_name=env_name)
 
 
-    # env.close()
+    env.close()
