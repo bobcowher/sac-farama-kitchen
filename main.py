@@ -15,20 +15,35 @@ if __name__ == '__main__':
     episodes = 10000
     warmup = 20
     batch_size = 64
-    updates_per_step = 1
+    updates_per_step = 4
     gamma = 0.99
     tau = 0.005
-    alpha = 0.15 # Temperature parameter.
+    alpha = 0.1 # Temperature parameter.
     policy = "Gaussian"
     target_update_interval = 1
     automatic_entropy_tuning = False
     hidden_size = 256
-    learning_rate = 0.0003
-    max_episode_steps=500 # max episode steps
-    env_name = "AntMaze_UMazeDense-v4"
+    learning_rate = 0.0001
+    max_episode_steps=100 # max episode steps
+    env_name = "PointMaze_UMaze-v3"
+    exploration_scaling_factor=1
 
 
-    env = gym.make(env_name, max_episode_steps=max_episode_steps, use_contact_forces=True)
+    STRAIGHT_MAZE = [[1, 1, 1, 1, 1],
+        [1, 0, 0, 0, 1],
+        [1, 1, 1, 1, 1]]
+    
+
+    MEDIUM_MAZE_DIVERSE_GR = [[1, 1, 1, 1, 1, 1, 1, 1],
+                        [1, C, 0, 1, 1, 0, 0, 1],
+                        [1, 0, 0, 1, 0, 0, C, 1],
+                        [1, 1, 0, 0, 0, 1, 1, 1],
+                        [1, 0, 0, 1, 0, 0, 0, 1],
+                        [1, C, 1, 0, 0, 1, 0, 1],
+                        [1, 0, 0, 0, 1, C, 0, 1],
+                        [1, 1, 1, 1, 1, 1, 1, 1]]
+
+    env = gym.make(env_name, max_episode_steps=max_episode_steps, maze_map=MEDIUM_MAZE_DIVERSE_GR)
     env = RoboGymObservationWrapper(env)
 
     # print(f"Obervation space: {env.observation_space}")
@@ -41,12 +56,12 @@ if __name__ == '__main__':
     # # Agent
     agent = SAC(observation_size, env.action_space, gamma=gamma, tau=tau, alpha=alpha, policy=policy,
                 target_update_interval=target_update_interval, automatic_entropy_tuning=automatic_entropy_tuning,
-                hidden_size=hidden_size, learning_rate=learning_rate)
+                hidden_size=hidden_size, learning_rate=learning_rate, exploration_scaling_factor=exploration_scaling_factor)
 
     # agent.load_checkpoint()
 
     # Tesnorboard
-    writer = SummaryWriter(f'runs/{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_hidden_size={hidden_size}_lr={learning_rate}_use_cf')
+    writer = SummaryWriter(f'runs/{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_hidden_size={hidden_size}_lr={learning_rate}_batch_size={batch_size}_intrinsic_curiosity={exploration_scaling_factor}_ups={updates_per_step}')
 
     # Memory
     memory = ReplayBuffer(replay_buffer_size, input_size=observation_size, n_actions=env.action_space.shape[0])
@@ -71,7 +86,7 @@ if __name__ == '__main__':
                 # Number of updates per step in environment
                 for i in range(updates_per_step):
                     # Update parameters of all the networks
-                    critic_1_loss, critic_2_loss, policy_loss, ent_loss, alpha = agent.update_parameters(memory,
+                    critic_1_loss, critic_2_loss, policy_loss, ent_loss, prediction_error_loss, alpha = agent.update_parameters(memory,
                                                                                                          batch_size,
                                                                                                          updates)
 
@@ -79,12 +94,11 @@ if __name__ == '__main__':
                     writer.add_scalar('loss/critic_2', critic_2_loss, updates)
                     writer.add_scalar('loss/policy', policy_loss, updates)
                     writer.add_scalar('loss/entropy_loss', ent_loss, updates)
+                    writer.add_scalar('loss/prediction_error', prediction_error_loss, updates)
                     writer.add_scalar('entropy_temprature/alpha', alpha, updates)
                     updates += 1
 
             next_state, reward, done, _, _ = env.step(action)  # Step
-            if reward == 1:
-                done = True
                 
             episode_steps += 1
             total_numsteps += 1

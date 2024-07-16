@@ -12,7 +12,7 @@ from torch.utils.tensorboard import SummaryWriter
 if __name__ == '__main__':
 
     replay_buffer_size = 10000000
-    episodes = 3
+    episodes = 5
     warmup = 20
     batch_size = 64
     updates_per_step = 1
@@ -24,11 +24,31 @@ if __name__ == '__main__':
     automatic_entropy_tuning = False
     hidden_size = 256
     learning_rate = 0.0001
-    max_episode_steps=500 # max episode steps
-    env_name = "AntMaze_UMazeDense-v4"
+    max_episode_steps=100 # max episode steps
+    env_name = "PointMaze_UMaze-v3"
+    exploration_scaling_factor=0.01
+
+    MEDIUM_MAZE_DIVERSE_GR = [[1, 1, 1, 1, 1, 1, 1, 1],
+                        [1, "C", 0, 1, 1, 0, 0, 1],
+                        [1, 0, 0, 1, 0, 0, "C", 1],
+                        [1, 1, 0, 0, 0, 1, 1, 1],
+                        [1, 0, 0, 1, 0, 0, 0, 1],
+                        [1, "C", 1, 0, 0, 1, 0, 1],
+                        [1, 0, 0, 0, 1, "C", 0, 1],
+                        [1, 1, 1, 1, 1, 1, 1, 1]]
 
 
-    env = gym.make(env_name, max_episode_steps=max_episode_steps, use_contact_forces=True, render_mode='human')
+    LARGE_MAZE = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                    [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+                    [1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+                    [1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+                    [1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1],
+                    [1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1],
+                    [1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1],
+                    [1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+                    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
+    
+    env = gym.make(env_name, max_episode_steps=max_episode_steps, render_mode='human', maze_map=LARGE_MAZE)
     env = RoboGymObservationWrapper(env)
 
     # print(f"Obervation space: {env.observation_space}")
@@ -41,7 +61,7 @@ if __name__ == '__main__':
     # # Agent
     agent = SAC(observation_size, env.action_space, gamma=gamma, tau=tau, alpha=alpha, policy=policy,
                 target_update_interval=target_update_interval, automatic_entropy_tuning=automatic_entropy_tuning,
-                hidden_size=hidden_size, learning_rate=learning_rate)
+                hidden_size=hidden_size, learning_rate=learning_rate, exploration_scaling_factor=exploration_scaling_factor)
 
     agent.load_checkpoint()
 
@@ -61,6 +81,7 @@ if __name__ == '__main__':
         while not done and episode_steps < max_episode_steps:
 
             action = agent.select_action(state)  # Sample action from policy
+            # print(f"Action: {action}")
 
             next_state, reward, done, _, _ = env.step(action)  # Step
             # print(next_state.shape)
