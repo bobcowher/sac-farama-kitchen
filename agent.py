@@ -4,6 +4,9 @@ import torch.nn.functional as F
 from torch.optim import Adam
 from sac_utils import *
 from model import *
+from torch.utils.tensorboard import SummaryWriter
+import datetime
+
 
 
 class SAC(object):
@@ -55,6 +58,7 @@ class SAC(object):
         else:
             _, _, action = self.policy.sample(state)
         return action.detach().cpu().numpy()[0]
+
 
     def update_parameters(self, memory, batch_size, updates):
         # Sample a batch from memory
@@ -129,6 +133,70 @@ class SAC(object):
             soft_update(self.critic_target, self.critic, self.tau)
 
         return qf1_loss.item(), qf2_loss.item(), policy_loss.item(), alpha_loss.item(), prediction_error.item(), alpha_tlogs.item()
+
+
+    def train(self, env, env_name, memory, episodes=1000, batch_size=64, updates_per_step=1, summary_writer_name="", max_episode_steps=100):
+
+        warmup = 20
+
+        # Tesnorboard
+        summary_writer_name = f'runs/{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_' + summary_writer_name
+        writer = SummaryWriter(summary_writer_name)
+
+        # Training Loop
+        total_numsteps = 0
+        updates = 0
+
+        for i_episode in range(episodes):
+            episode_reward = 0
+            episode_steps = 0
+            done = False
+            state, _ = env.reset()
+
+            while not done and episode_steps < max_episode_steps:
+                if warmup > i_episode:
+                    action = env.action_space.sample()  # Sample random action
+                else:
+                    action = self.select_action(state)  # Sample action from policy
+
+                if memory.can_sample(batch_size=batch_size):
+                    # Number of updates per step in environment
+                    for i in range(updates_per_step):
+                        # Update parameters of all the networks
+                        critic_1_loss, critic_2_loss, policy_loss, ent_loss, prediction_error_loss, alpha = self.update_parameters(memory,
+                                                                                                            batch_size,
+                                                                                                            updates)
+
+                        writer.add_scalar('loss/critic_1', critic_1_loss, updates)
+                        writer.add_scalar('loss/critic_2', critic_2_loss, updates)
+                        writer.add_scalar('loss/policy', policy_loss, updates)
+                        writer.add_scalar('loss/entropy_loss', ent_loss, updates)
+                        writer.add_scalar('loss/prediction_error', prediction_error_loss, updates)
+                        writer.add_scalar('entropy_temprature/alpha', alpha, updates)
+                        updates += 1
+
+                next_state, reward, done, _, _ = env.step(action)  # Step
+                    
+                episode_steps += 1
+                total_numsteps += 1
+                episode_reward += reward
+
+                # Ignore the "done" signal if it comes from hitting the time horizon.
+                mask = 1 if episode_steps == max_episode_steps else float(not done)
+
+                memory.store_transition(state, action, reward, next_state, mask)  # Append transition to memory
+
+                state = next_state
+
+            writer.add_scalar('reward/train', episode_reward, i_episode)
+            print("Episode: {}, total numsteps: {}, episode steps: {}, reward: {}".format(i_episode, total_numsteps,
+                                                                                        episode_steps,
+                                                                                        round(episode_reward, 2)))
+            if i_episode % 10 == 0:
+                self.save_checkpoint(env_name=env_name)
+
+
+        env.close()
 
 
     def save_models(self):
