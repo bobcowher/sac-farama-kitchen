@@ -198,6 +198,36 @@ class SAC(object):
 
         env.close()
 
+    def test(self, env, episodes=10, max_episode_steps=500):
+
+        for i_episode in range(episodes):
+            episode_reward = 0
+            episode_steps = 0
+            done = False
+            state, _ = env.reset()
+
+            while not done and episode_steps < max_episode_steps:
+
+                action = self.select_action(state)  # Sample action from policy
+                # print(f"Action: {action}")
+
+                next_state, reward, done, _, _ = env.step(action)  # Step
+                # print(next_state.shape)
+                episode_steps += 1
+
+                if reward == 1:
+                    done = True
+                episode_reward += reward
+
+                # Ignore the "done" signal if it comes from hitting the time horizon.
+                # (https://github.com/openai/spinningup/blob/master/spinup/algos/sac/sac.py)
+                mask = 1 if episode_steps == max_episode_steps else float(not done)
+
+                state = next_state
+
+            print("Episode: {}, episode steps: {}, reward: {}".format(i_episode,
+                                                                                        episode_steps,
+                                                                                        round(episode_reward, 2)))
 
     def save_models(self):
         self.actor.save_checkpoint()
@@ -228,7 +258,10 @@ class SAC(object):
             self.critic_target.load_checkpoint()
             print('Successfully loaded models')
         except:
-            print("Unable to load models. Starting from scratch")
+            if evaluate:
+                raise Exception("Unable to load models. Can't evaluate model")
+            else:
+                print("Unable to load models. Starting from scratch")
 
         if evaluate:
             self.policy.eval()
