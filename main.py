@@ -84,3 +84,4 @@ if __name__ == '__main__':
                 summary_writer_name=f"large_maze_temp={alpha}_lr={learning_rate}_hs={hidden_size}",
                 max_episode_steps=max_episode_steps_phase_2)
 
+    env.close()
