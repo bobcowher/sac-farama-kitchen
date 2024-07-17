@@ -138,6 +138,7 @@ class SAC(object):
         self.critic_2.save_checkpoint()
         self.target_critic_1.save_checkpoint()
         self.target_critic_2.save_checkpoint()
+        self.predictive_model.save_checkpoint()
     # Save model parameters
     def save_checkpoint(self, env_name, suffix=""):
         if not os.path.exists('checkpoints/'):

@@ -12,7 +12,7 @@ from torch.utils.tensorboard import SummaryWriter
 if __name__ == '__main__':
 
     replay_buffer_size = 10000000
-    episodes = 5
+    episodes = 10
     warmup = 20
     batch_size = 64
     updates_per_step = 1
@@ -22,9 +22,9 @@ if __name__ == '__main__':
     policy = "Gaussian"
     target_update_interval = 1
     automatic_entropy_tuning = False
-    hidden_size = 256
+    hidden_size = 512
     learning_rate = 0.0001
-    max_episode_steps=100 # max episode steps
+    max_episode_steps=500 # max episode steps
     env_name = "PointMaze_UMaze-v3"
     exploration_scaling_factor=0.01
 
