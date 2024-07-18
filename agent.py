@@ -196,8 +196,6 @@ class SAC(object):
                 self.save_checkpoint(env_name=env_name)
 
 
-        env.close()
-
     def test(self, env, episodes=10, max_episode_steps=500):
 
         for i_episode in range(episodes):

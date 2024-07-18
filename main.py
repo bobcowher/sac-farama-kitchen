@@ -17,14 +17,14 @@ if __name__ == '__main__':
     updates_per_step = 4
     gamma = 0.99
     tau = 0.005
-    alpha = 0.2 # Temperature parameter.
+    alpha = 0.1 # Temperature parameter.
     policy = "Gaussian"
     target_update_interval = 1
     automatic_entropy_tuning = False
     hidden_size = 512
     learning_rate = 0.0001
     env_name = "PointMaze_UMaze-v3"
-    exploration_scaling_factor=1
+    exploration_scaling_factor=0.5
 
 
     # Training Phase 1
@@ -51,7 +51,7 @@ if __name__ == '__main__':
 
     agent.train(env=env, env_name=env_name, memory=memory, episodes=100, 
                 batch_size=batch_size, updates_per_step=updates_per_step,
-                summary_writer_name=f"small_maze_temp={alpha}_lr={learning_rate}_hs={hidden_size}",
+                summary_writer_name=f"small_maze_temp={alpha}_lr={learning_rate}_hs={hidden_size}_esp={exploration_scaling_factor}",
                 max_episode_steps=max_episode_steps_phase_1)
 
     # Training Phase 2
@@ -81,7 +81,7 @@ if __name__ == '__main__':
 
     agent.train(env=env, env_name=env_name, memory=memory, episodes=episodes, 
                 batch_size=batch_size, updates_per_step=updates_per_step,
-                summary_writer_name=f"large_maze_temp={alpha}_lr={learning_rate}_hs={hidden_size}",
+                summary_writer_name=f"large_maze_temp={alpha}_lr={learning_rate}_hs={hidden_size}_esp={exploration_scaling_factor}",
                 max_episode_steps=max_episode_steps_phase_2)
 
     env.close()

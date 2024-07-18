@@ -7,6 +7,7 @@ import datetime
 from agent import SAC
 from gym_robotics_custom import RoboGymObservationWrapper
 from torch.utils.tensorboard import SummaryWriter
+from mazes import *
 
 
 if __name__ == '__main__':
@@ -28,27 +29,7 @@ if __name__ == '__main__':
     env_name = "PointMaze_UMaze-v3"
     exploration_scaling_factor=0.01
 
-    MEDIUM_MAZE_DIVERSE_GR = [[1, 1, 1, 1, 1, 1, 1, 1],
-                        [1, "C", 0, 1, 1, 0, 0, 1],
-                        [1, 0, 0, 1, 0, 0, "C", 1],
-                        [1, 1, 0, 0, 0, 1, 1, 1],
-                        [1, 0, 0, 1, 0, 0, 0, 1],
-                        [1, "C", 1, 0, 0, 1, 0, 1],
-                        [1, 0, 0, 0, 1, "C", 0, 1],
-                        [1, 1, 1, 1, 1, 1, 1, 1]]
-
-
-    LARGE_MAZE = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                    [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
-                    [1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1],
-                    [1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1],
-                    [1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1],
-                    [1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1],
-                    [1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1],
-                    [1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
-                    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
-    
-    env = gym.make(env_name, max_episode_steps=max_episode_steps, render_mode='human', maze_map=LARGE_MAZE)
+    env = gym.make(env_name, max_episode_steps=max_episode_steps, render_mode='human', maze_map=mazes["LARGE_MAZE"])
     env = RoboGymObservationWrapper(env)
 
     # print(f"Obervation space: {env.observation_space}")
