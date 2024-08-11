@@ -52,7 +52,7 @@ if __name__ == '__main__':
     total_numsteps = 0
     updates = 0
 
-    agent.pretrain_actor(memory=memory, epochs=1000, batch_size=64, 
+    agent.pretrain_actor(memory=memory, epochs=2000, batch_size=64, 
                          summary_writer_name=f"actor_pretrain")
         
     agent.pretrain_critic(memory=memory, epochs=1000, batch_size=64,
