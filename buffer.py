@@ -30,7 +30,7 @@ class ReplayBuffer():
 
         self.mem_ctr += 1
 
-    def sample_buffer(self, batch_size):
+    def sample_buffer(self, batch_size, augment_data=False, noise_ratio=0.1):
         max_mem = min(self.mem_ctr, self.mem_size)
         batch = np.random.choice(max_mem, batch_size)
 
@@ -39,6 +39,17 @@ class ReplayBuffer():
         actions = self.action_memory[batch]
         rewards = self.reward_memory[batch]
         dones = self.terminal_memory[batch]
+
+        if augment_data:
+            # Compute dynamic noise levels based on the average absolute values
+            state_noise_std = noise_ratio * np.mean(np.abs(states))
+            action_noise_std = noise_ratio * np.mean(np.abs(actions))
+            reward_noise_std = noise_ratio * np.mean(np.abs(rewards))
+
+            # Adding dynamic noise to states, actions, and rewards
+            states = states + np.random.normal(0, state_noise_std, states.shape)
+            actions = actions + np.random.normal(0, action_noise_std, actions.shape)
+            rewards = rewards + np.random.normal(0, reward_noise_std, rewards.shape)
 
         return states, actions, rewards, states_, dones
 

@@ -30,7 +30,7 @@ if __name__ == '__main__':
     env_name = "FrankaKitchen-v1"
     exploration_scaling_factor=0.01
 
-    env = gym.make(env_name, max_episode_steps=max_episode_steps, tasks_to_complete=['microwave'], render_mode='human', )
+    env = gym.make(env_name, max_episode_steps=max_episode_steps, tasks_to_complete=['microwave'], render_mode='human', autoreset=False)
 
     env = RoboGymObservationWrapper(env)
 
@@ -63,6 +63,13 @@ if __name__ == '__main__':
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                elif event.type == pygame.KEYDOWN:
+                # Check if CTRL+H is pressed
+                    if event.key == pygame.K_h and pygame.key.get_mods() & pygame.KMOD_CTRL:
+                        # Trigger the key event in MuJoCo
+                        env.render()  # Ensure the environment handles the key event
+                    # Handle other key events for the controller
+                    action = controller.get_action()
 
             action = controller.get_action()
             if(action is not None):
