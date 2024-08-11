@@ -23,7 +23,7 @@ class RoboGymObservationWrapper(ObservationWrapper):
         obs_achieved_goal = observation['achieved_goal']
         obs_desired_goal = observation['desired_goal']
 
-        obs_concatenated = np.concatenate((obs_pos, obs_achieved_goal, obs_desired_goal))
+        obs_concatenated = np.concatenate((obs_pos, obs_achieved_goal['microwave'], obs_desired_goal['microwave']))
 
         return obs_concatenated
 

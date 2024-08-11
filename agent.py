@@ -9,7 +9,7 @@ import datetime
 
 
 
-class SAC(object):
+class Agent(object):
     def __init__(self, num_inputs, action_space, gamma, tau, alpha, policy, target_update_interval,
                  automatic_entropy_tuning, hidden_size, learning_rate, exploration_scaling_factor):
 
@@ -74,11 +74,19 @@ class SAC(object):
         predicted_next_state = self.predictive_model(state_batch, action_batch)
 
         # Calculate prediction loss as an intrinsic reward
+        # print("Predicted next state:", predicted_next_state.shape)
+        # print("Actual next state:", next_state_batch.shape)
         prediction_error = F.mse_loss(predicted_next_state, next_state_batch)
         prediction_error_no_reduction = F.mse_loss(predicted_next_state, next_state_batch, reduce=False)
 
         scaled_intrinsic_reward = prediction_error_no_reduction.mean(dim=1)
         scaled_intrinsic_reward = self.exploration_scaling_factor * torch.reshape(scaled_intrinsic_reward, (batch_size, 1))
+
+        # Calculate penalty for stagnation
+        # stagnation_penalty = -0.1  # Adjust the value as needed
+        # if (state_batch == next_state_batch).all(dim=1).sum() > 0:
+        #     reward_batch += stagnation_penalty
+
         # print(f"Scaled Intrinsic Reward(mean): {scaled_intrinsic_reward.mean()}")
 
         reward_batch = reward_batch + scaled_intrinsic_reward

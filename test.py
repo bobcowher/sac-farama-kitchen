@@ -4,10 +4,9 @@ import gymnasium as gym
 import numpy as np
 from buffer import ReplayBuffer
 import datetime
-from agent import SAC
+from agent import Agent
 from gym_robotics_custom import RoboGymObservationWrapper
 from torch.utils.tensorboard import SummaryWriter
-from mazes import *
 
 
 if __name__ == '__main__':
@@ -26,10 +25,10 @@ if __name__ == '__main__':
     hidden_size = 512
     learning_rate = 0.0001
     max_episode_steps=500 # max episode steps
-    env_name = "PointMaze_UMaze-v3"
+    env_name = "FrankaKitchen-v1"
     exploration_scaling_factor=0.01
 
-    env = gym.make(env_name, max_episode_steps=max_episode_steps, render_mode='human', maze_map=mazes["LARGE_MAZE"])
+    env = gym.make(env_name, max_episode_steps=max_episode_steps, tasks_to_complete=['microwave'], render_mode='human')
     env = RoboGymObservationWrapper(env)
 
     # print(f"Obervation space: {env.observation_space}")
@@ -40,7 +39,7 @@ if __name__ == '__main__':
     observation_size = observation.shape[0]
 
     # # Agent
-    agent = SAC(observation_size, env.action_space, gamma=gamma, tau=tau, alpha=alpha, policy=policy,
+    agent = Agent(observation_size, env.action_space, gamma=gamma, tau=tau, alpha=alpha, policy=policy,
                 target_update_interval=target_update_interval, automatic_entropy_tuning=automatic_entropy_tuning,
                 hidden_size=hidden_size, learning_rate=learning_rate, exploration_scaling_factor=exploration_scaling_factor)
 
