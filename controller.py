@@ -18,6 +18,8 @@ class Controller:
         """
         action = np.zeros(9)  # Assuming 9 action dimensions as specified
 
+        gripper_button_pressed = False
+
         # Map left joystick to panda0_joint1 and panda0_joint2 angular velocity
         action[0] = self.joystick.get_axis(0)  # Left stick horizontal
         action[1] = self.joystick.get_axis(1)  # Left stick vertical
@@ -44,9 +46,11 @@ class Controller:
             print("Button 2 pressed")
         elif self.joystick.get_button(1):
             self.gripper_closed = True
+            gripper_button_pressed = True
             print("Button 1 pressed")
         elif self.joystick.get_button(3):
             self.gripper_closed = False
+            gripper_button_pressed = True
             print("Button 3 pressed")
         elif self.joystick.get_button(4):  # Circle button
             action[5] = 1
@@ -71,11 +75,14 @@ class Controller:
         action = action * mask
         action = np.where(action == -0.0, 0.0, action)
 
-        if self.gripper_closed == True:
-            action[7] = -1.0  # Close gripper
-            action[8] = -1.0
-        elif self.gripper_closed == False:
-            action[7] = 1.0  # Open gripper
-            action[8] = 1.0
+        if np.all(action == 0) and gripper_button_pressed == False:
+            action = None
+        else:
+            if self.gripper_closed == True:
+                action[7] = -1.0  # Close gripper
+                action[8] = -1.0
+            elif self.gripper_closed == False:
+                action[7] = 1.0  # Open gripper
+                action[8] = 1.0
 
         return action

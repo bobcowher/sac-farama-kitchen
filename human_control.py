@@ -39,24 +39,43 @@ if __name__ == '__main__':
     # print(f"Obervation space: {env.observation_space}")
     print(f"Action space: {env.action_space}")
 
-    observation, info = env.reset()
+    state, info = env.reset()
 
+    state_size = state.shape[0]
+
+    memory = ReplayBuffer(replay_buffer_size, input_size=state_size, n_actions=env.action_space.shape[0])
+
+    memory.load_from_csv(filename='checkpoints/human_memory.npz')
+    
+    starting_memory_size = memory.mem_ctr
+    
+    print(f"Starting memory size is {starting_memory_size}")
 
     controller = Controller()
 
-    done = False
+    
 
+    
 
-    state = env.reset()
+    while True: # Run until interrupted
+        episode_steps = 0
+        done = False
+        state, info = env.reset()
 
+        while not done and episode_steps < max_episode_steps:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
 
-    while not done:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
+            action = controller.get_action()
+            if(action is not None):
+                next_state, reward, done, _, _ = env.step(action)
+                mask = 1 if episode_steps == max_episode_steps else float(not done)
+                memory.store_transition(state, action, reward, next_state, mask) 
+                print(f"Episode step: {episode_steps} Reward: , {reward} Successfully added {memory.mem_ctr - starting_memory_size} steps to memory")
+                state = next_state
+                episode_steps += 1
+            time.sleep(0.05)
+        
 
-        action = controller.get_action()
-        if(not np.all(action == 0)):
-            next_state, reward, done, _, _ = env.step(action)
-            state = next_state
-        time.sleep(0.05)
+        memory.save_to_csv(filename='checkpoints/human_memory.npz')
