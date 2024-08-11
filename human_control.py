@@ -53,9 +53,6 @@ if __name__ == '__main__':
 
     controller = Controller()
 
-    
-
-    
 
     while True: # Run until interrupted
         episode_steps = 0

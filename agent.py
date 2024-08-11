@@ -6,6 +6,7 @@ from sac_utils import *
 from model import *
 from torch.utils.tensorboard import SummaryWriter
 import datetime
+from buffer import ReplayBuffer
 
 
 
@@ -59,6 +60,74 @@ class Agent(object):
             _, _, action = self.policy.sample(state)
         return action.detach().cpu().numpy()[0]
 
+    def pretrain_actor(self, memory : ReplayBuffer, epochs=100, batch_size=64, summary_writer_name=""):
+        self.policy.train()
+        
+        summary_writer_name = f'runs/{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_' + summary_writer_name
+        writer = SummaryWriter(summary_writer_name)
+        
+        for epoch in range(epochs):
+            epoch_loss = 0
+            for _ in range(len(memory) // batch_size):
+                state_batch, action_batch, _, _, _ = memory.sample_buffer(batch_size=batch_size)
+                
+                state_batch = torch.FloatTensor(state_batch).to(self.device)
+                action_batch = torch.FloatTensor(action_batch).to(self.device)
+                
+                predicted_actions, _, _ = self.policy.sample(state_batch)
+                loss = F.mse_loss(predicted_actions, action_batch)
+                
+                self.policy_optim.zero_grad()
+                loss.backward()
+                self.policy_optim.step()
+                
+                epoch_loss += loss.item()
+
+            avg_epoch_loss = epoch_loss / (len(memory) // batch_size)
+            writer.add_scalar('pretrain_actor/loss', avg_epoch_loss, epoch)
+            print(f"Epoch {epoch+1}/{epochs}, Loss: {avg_epoch_loss}")
+
+        writer.close()
+
+    def pretrain_critic(self, memory : ReplayBuffer, epochs=100, batch_size=64, summary_writer_name=""):
+        self.critic.train()
+        
+        summary_writer_name = f'runs/{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_' + summary_writer_name
+        writer = SummaryWriter(summary_writer_name)
+        
+        for epoch in range(epochs):
+            epoch_loss = 0
+            for _ in range(len(memory) // batch_size):
+                state_batch, action_batch, reward_batch, next_state_batch, done_batch = memory.sample_buffer(batch_size=batch_size)
+                
+                state_batch = torch.FloatTensor(state_batch).to(self.device)
+                action_batch = torch.FloatTensor(action_batch).to(self.device)
+                next_state_batch = torch.FloatTensor(next_state_batch).to(self.device)
+                reward_batch = torch.FloatTensor(reward_batch).to(self.device).unsqueeze(1)
+                done_batch = torch.FloatTensor(done_batch).to(self.device).unsqueeze(1)
+                
+                with torch.no_grad():
+                    next_action_batch, next_log_pi, _ = self.policy.sample(next_state_batch)
+                    qf1_next_target, qf2_next_target = self.critic_target(next_state_batch, next_action_batch)
+                    min_qf_next_target = torch.min(qf1_next_target, qf2_next_target) - self.alpha * next_log_pi
+                    target_q_value = reward_batch + self.gamma * (1 - done_batch) * min_qf_next_target
+                
+                qf1, qf2 = self.critic(state_batch, action_batch)
+                qf1_loss = F.mse_loss(qf1, target_q_value)
+                qf2_loss = F.mse_loss(qf2, target_q_value)
+                qf_loss = qf1_loss + qf2_loss
+                
+                self.critic_optim.zero_grad()
+                qf_loss.backward()
+                self.critic_optim.step()
+                
+                epoch_loss += qf_loss.item()
+
+            avg_epoch_loss = epoch_loss / (len(memory) // batch_size)
+            writer.add_scalar('pretrain_critic/loss', avg_epoch_loss, epoch)
+            print(f"Epoch {epoch+1}/{epochs}, Critic Loss: {avg_epoch_loss}")
+
+        writer.close()
 
     def update_parameters(self, memory, batch_size, updates):
         # Sample a batch from memory
@@ -191,7 +260,7 @@ class Agent(object):
 
                 # Ignore the "done" signal if it comes from hitting the time horizon.
                 mask = 1 if episode_steps == max_episode_steps else float(not done)
-
+                
                 memory.store_transition(state, action, reward, next_state, mask)  # Append transition to memory
 
                 state = next_state

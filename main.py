@@ -42,12 +42,25 @@ if __name__ == '__main__':
                 target_update_interval=target_update_interval, automatic_entropy_tuning=automatic_entropy_tuning,
                 hidden_size=hidden_size, learning_rate=learning_rate, exploration_scaling_factor=exploration_scaling_factor)
     
-        # Memory
+    # Memory
     memory = ReplayBuffer(replay_buffer_size, input_size=observation_size, n_actions=env.action_space.shape[0])
+
+    memory.load_from_csv(filename='checkpoints/human_memory.npz')
+    time.sleep(2)
+
+    # Training Loop
+    total_numsteps = 0
+    updates = 0
+
+    agent.pretrain_actor(memory=memory, epochs=1000, batch_size=64, 
+                         summary_writer_name=f"actor_pretrain")
+        
+    agent.pretrain_critic(memory=memory, epochs=1000, batch_size=64,
+                          summary_writer_name=f"critic_pretrain")
 
     agent.train(env=env, env_name=env_name, memory=memory, episodes=10000, 
                 batch_size=batch_size, updates_per_step=updates_per_step,
-                summary_writer_name=f"small_maze_temp={alpha}_lr={learning_rate}_hs={hidden_size}_esp={exploration_scaling_factor}_a={alpha}",
+                summary_writer_name=f"live_train_alpha={alpha}_lr={learning_rate}_hs={hidden_size}_esp={exploration_scaling_factor}_a={alpha}",
                 max_episode_steps=max_episode_steps)
 
     # Training Phase 2

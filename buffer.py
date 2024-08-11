@@ -10,6 +10,8 @@ class ReplayBuffer():
         self.reward_memory = np.zeros(self.mem_size)
         self.terminal_memory = np.zeros(self.mem_size, dtype=bool)
 
+    def __len__(self):
+        return self.mem_ctr
 
     def can_sample(self, batch_size):
         if self.mem_ctr > (batch_size * 5):
