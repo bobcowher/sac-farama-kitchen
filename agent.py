@@ -60,7 +60,7 @@ class Agent(object):
             _, _, action = self.policy.sample(state)
         return action.detach().cpu().numpy()[0]
 
-    def pretrain_actor(self, memory : ReplayBuffer, epochs=100, batch_size=64, summary_writer_name=""):
+    def pretrain_actor(self, memory : ReplayBuffer, epochs=100, batch_size=64, summary_writer_name="", noise_ratio=0.1):
         self.policy.train()
         
         summary_writer_name = f'runs/{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_' + summary_writer_name
@@ -69,7 +69,7 @@ class Agent(object):
         for epoch in range(epochs):
             epoch_loss = 0
             for _ in range(len(memory) // batch_size):
-                state_batch, action_batch, _, _, _ = memory.sample_buffer(batch_size=batch_size)
+                state_batch, action_batch, _, _, _ = memory.sample_buffer(batch_size=batch_size, augment_data=True, noise_ratio=noise_ratio)
                 
                 state_batch = torch.FloatTensor(state_batch).to(self.device)
                 action_batch = torch.FloatTensor(action_batch).to(self.device)
@@ -89,7 +89,8 @@ class Agent(object):
 
         writer.close()
 
-    def pretrain_critic(self, memory : ReplayBuffer, epochs=100, batch_size=64, summary_writer_name=""):
+
+    def pretrain_critic_with_human_data(self, memory : ReplayBuffer, epochs=100, batch_size=64, summary_writer_name="", noise_ratio=0.1):
         self.critic.train()
         
         summary_writer_name = f'runs/{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_' + summary_writer_name
@@ -98,7 +99,7 @@ class Agent(object):
         for epoch in range(epochs):
             epoch_loss = 0
             for _ in range(len(memory) // batch_size):
-                state_batch, action_batch, reward_batch, next_state_batch, done_batch = memory.sample_buffer(batch_size=batch_size)
+                state_batch, action_batch, reward_batch, next_state_batch, done_batch = memory.sample_buffer(batch_size=batch_size, augment_data=True, noise_ratio=noise_ratio)
                 
                 state_batch = torch.FloatTensor(state_batch).to(self.device)
                 action_batch = torch.FloatTensor(action_batch).to(self.device)
@@ -107,9 +108,8 @@ class Agent(object):
                 done_batch = torch.FloatTensor(done_batch).to(self.device).unsqueeze(1)
                 
                 with torch.no_grad():
-                    next_action_batch, next_log_pi, _ = self.policy.sample(next_state_batch)
-                    qf1_next_target, qf2_next_target = self.critic_target(next_state_batch, next_action_batch)
-                    min_qf_next_target = torch.min(qf1_next_target, qf2_next_target) - self.alpha * next_log_pi
+                    qf1_next_target, qf2_next_target = self.critic_target(next_state_batch, action_batch)  # Human's next action
+                    min_qf_next_target = torch.min(qf1_next_target, qf2_next_target)
                     target_q_value = reward_batch + self.gamma * (1 - done_batch) * min_qf_next_target
                 
                 qf1, qf2 = self.critic(state_batch, action_batch)
@@ -140,16 +140,16 @@ class Agent(object):
         mask_batch = torch.FloatTensor(mask_batch).to(self.device).unsqueeze(1)
 
         # Predict the next state using the predictive model
-        predicted_next_state = self.predictive_model(state_batch, action_batch)
+        # predicted_next_state = self.predictive_model(state_batch, action_batch)
 
-        # Calculate prediction loss as an intrinsic reward
-        # print("Predicted next state:", predicted_next_state.shape)
-        # print("Actual next state:", next_state_batch.shape)
-        prediction_error = F.mse_loss(predicted_next_state, next_state_batch)
-        prediction_error_no_reduction = F.mse_loss(predicted_next_state, next_state_batch, reduce=False)
+        # # Calculate prediction loss as an intrinsic reward
+        # # print("Predicted next state:", predicted_next_state.shape)
+        # # print("Actual next state:", next_state_batch.shape)
+        # prediction_error = F.mse_loss(predicted_next_state, next_state_batch)
+        # prediction_error_no_reduction = F.mse_loss(predicted_next_state, next_state_batch, reduce=False)
 
-        scaled_intrinsic_reward = prediction_error_no_reduction.mean(dim=1)
-        scaled_intrinsic_reward = self.exploration_scaling_factor * torch.reshape(scaled_intrinsic_reward, (batch_size, 1))
+        # scaled_intrinsic_reward = prediction_error_no_reduction.mean(dim=1)
+        # scaled_intrinsic_reward = self.exploration_scaling_factor * torch.reshape(scaled_intrinsic_reward, (batch_size, 1))
 
         # Calculate penalty for stagnation
         # stagnation_penalty = -0.1  # Adjust the value as needed
@@ -158,7 +158,7 @@ class Agent(object):
 
         # print(f"Scaled Intrinsic Reward(mean): {scaled_intrinsic_reward.mean()}")
 
-        reward_batch = reward_batch + scaled_intrinsic_reward
+        # reward_batch = reward_batch + scaled_intrinsic_reward # TODO: Uncomment for intrinsic reward
 
         with torch.no_grad():
             next_state_action, next_state_log_pi, _ = self.policy.sample(next_state_batch)
@@ -176,10 +176,10 @@ class Agent(object):
         qf_loss.backward()
         self.critic_optim.step()
 
-        # Update the predictive model
-        self.predictive_model_optim.zero_grad()
-        prediction_error.backward()
-        self.predictive_model_optim.step()
+        # # Update the predictive model
+        # self.predictive_model_optim.zero_grad()
+        # prediction_error.backward()
+        # self.predictive_model_optim.step()
 
         pi, log_pi, _ = self.policy.sample(state_batch)
 
@@ -209,7 +209,7 @@ class Agent(object):
         if updates % self.target_update_interval == 0:
             soft_update(self.critic_target, self.critic, self.tau)
 
-        return qf1_loss.item(), qf2_loss.item(), policy_loss.item(), alpha_loss.item(), prediction_error.item(), alpha_tlogs.item()
+        return qf1_loss.item(), qf2_loss.item(), policy_loss.item(), alpha_loss.item(), 0, alpha_tlogs.item()
 
 
     def train(self, env, env_name, memory, episodes=1000, batch_size=64, updates_per_step=1, summary_writer_name="", max_episode_steps=100):

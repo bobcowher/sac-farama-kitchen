@@ -21,12 +21,14 @@ class QNetwork(nn.Module):
         # Q1 architecture
         self.linear1 = nn.Linear(num_inputs + num_actions, hidden_dim)
         self.linear2 = nn.Linear(hidden_dim, hidden_dim)
-        self.linear3 = nn.Linear(hidden_dim, 1)
+        self.linear3 = nn.Linear(hidden_dim, hidden_dim)
+        self.output1 = nn.Linear(hidden_dim, 1)
 
         # Q2 architecture
         self.linear4 = nn.Linear(num_inputs + num_actions, hidden_dim)
         self.linear5 = nn.Linear(hidden_dim, hidden_dim)
-        self.linear6 = nn.Linear(hidden_dim, 1)
+        self.linear6 = nn.Linear(hidden_dim, hidden_dim)
+        self.output2 = nn.Linear(hidden_dim, 1)
 
         self.name = name
         self.checkpoint_dir = checkpoint_dir
@@ -39,11 +41,13 @@ class QNetwork(nn.Module):
         
         x1 = F.relu(self.linear1(xu))
         x1 = F.relu(self.linear2(x1))
-        x1 = self.linear3(x1)
+        # x1 = F.relu(self.linear3(x1))
+        x1 = self.output1(x1)
 
         x2 = F.relu(self.linear4(xu))
         x2 = F.relu(self.linear5(x2))
-        x2 = self.linear6(x2)
+        # x2 = F.relu(self.linear6(x2))
+        x2 = self.output2(x2)
 
         return x1, x2
 
@@ -60,6 +64,7 @@ class GaussianPolicy(nn.Module):
         
         self.linear1 = nn.Linear(num_inputs, hidden_dim)
         self.linear2 = nn.Linear(hidden_dim, hidden_dim)
+        # self.linear3 = nn.Linear(hidden_dim, hidden_dim)
 
         self.mean_linear = nn.Linear(hidden_dim, num_actions)
         self.log_std_linear = nn.Linear(hidden_dim, num_actions)
@@ -83,6 +88,7 @@ class GaussianPolicy(nn.Module):
     def forward(self, state):
         x = F.relu(self.linear1(state))
         x = F.relu(self.linear2(x))
+        # x = F.relu(self.linear3(x))
         mean = self.mean_linear(x)
         log_std = self.log_std_linear(x)
         log_std = torch.clamp(log_std, min=LOG_SIG_MIN, max=LOG_SIG_MAX)

@@ -83,3 +83,6 @@ if __name__ == '__main__':
         
 
         memory.save_to_csv(filename='checkpoints/human_memory.npz')
+
+
+
