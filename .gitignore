@@ -5,3 +5,6 @@ __pycache__
 .idea
 checkpoints*
 *.tar.gz
+main2.py
+main3.py
+main4.py
