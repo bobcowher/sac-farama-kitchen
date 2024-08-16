@@ -12,7 +12,7 @@ from torch.utils.tensorboard import SummaryWriter
 if __name__ == '__main__':
 
     replay_buffer_size = 10000000
-    episodes = 10
+    episodes = 3
     warmup = 20
     batch_size = 64
     updates_per_step = 1
@@ -45,6 +45,6 @@ if __name__ == '__main__':
 
     agent.load_checkpoint(evaluate=True)
 
-    agent.test(env=env, episodes=10, max_episode_steps=500)
+    agent.test(env=env, episodes=episodes, max_episode_steps=500)
 
     env.close()
