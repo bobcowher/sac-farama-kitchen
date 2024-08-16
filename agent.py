@@ -90,6 +90,70 @@ class Agent(object):
         writer.close()
 
 
+    def pretrain_actor_and_critic(self, memory : ReplayBuffer, epochs=100, batch_size=64, summary_writer_name="", noise_ratio=0.1):
+        self.policy.train()
+        
+        summary_writer_name = f'runs/{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_' + summary_writer_name
+        writer = SummaryWriter(summary_writer_name)
+        
+        for epoch in range(epochs):
+            epoch_loss_actor = 0
+            epoch_loss_critic = 0
+
+            for _ in range(len(memory) // batch_size):
+                state_batch, action_batch, reward_batch, next_state_batch, mask_batch = memory.sample_buffer(batch_size=batch_size)
+                
+                state_batch = torch.FloatTensor(state_batch).to(self.device)
+                next_state_batch = torch.FloatTensor(next_state_batch).to(self.device)
+                action_batch = torch.FloatTensor(action_batch).to(self.device)
+                reward_batch = torch.FloatTensor(reward_batch).to(self.device).unsqueeze(1)
+                mask_batch = torch.FloatTensor(mask_batch).to(self.device).unsqueeze(1)
+                
+                if epoch % 2 == 0:
+                    predicted_actions, _, _ = self.policy.sample(state_batch)
+                    loss = F.mse_loss(predicted_actions, action_batch)
+                    
+                    self.policy_optim.zero_grad()
+                    loss.backward()
+                    self.policy_optim.step()
+                    
+                    epoch_loss_actor += loss.item()
+                else: 
+                    with torch.no_grad():
+                        next_state_action, next_state_log_pi, _ = self.policy.sample(next_state_batch)
+                        qf1_next_target, qf2_next_target = self.critic_target(next_state_batch, next_state_action)
+                        min_qf_next_target = torch.min(qf1_next_target, qf2_next_target) - self.alpha * next_state_log_pi
+                        next_q_value = reward_batch + mask_batch * self.gamma * (min_qf_next_target)
+
+                    qf1, qf2 = self.critic(state_batch, action_batch)  # Two Q-functions to mitigate positive bias in the policy improvement step
+                    qf1_loss = F.mse_loss(qf1, next_q_value)  # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
+                    qf2_loss = F.mse_loss(qf2, next_q_value)  # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
+                    qf_loss = qf1_loss + qf2_loss
+
+                    # Update the critic network
+                    self.critic_optim.zero_grad()
+                    qf_loss.backward()
+                    self.critic_optim.step()
+                    
+                    epoch_loss_critic += qf_loss.item()
+
+            if epoch % 2 == 0:
+                avg_epoch_loss_actor = epoch_loss_actor / (len(memory) // batch_size)
+                writer.add_scalar('pretrain_actor/loss', avg_epoch_loss_actor, epoch)
+                print(f"Epoch {epoch+1}/{epochs}, Actor Loss: {avg_epoch_loss_actor}")
+            else:
+                avg_epoch_loss_critic = epoch_loss_critic / (len(memory) // batch_size)
+                writer.add_scalar('pretrain_critic/loss', avg_epoch_loss_critic, epoch)
+                print(f"Epoch {epoch+1}/{epochs}, Critic Loss: {avg_epoch_loss_critic}")
+
+            
+            soft_update(self.critic_target, self.critic, self.tau)
+
+
+        writer.close()
+
+
+
     def pretrain_critic_with_human_data(self, memory : ReplayBuffer, epochs=100, batch_size=64, summary_writer_name="", noise_ratio=0.1):
         self.critic.train()
         
