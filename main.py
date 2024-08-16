@@ -17,14 +17,14 @@ if __name__ == '__main__':
     updates_per_step = 4
     gamma = 0.99
     tau = 0.005
-    alpha = 0.12 # Temperature parameter.
+    alpha = 0.1 # Temperature parameter.
     policy = "Gaussian"
     target_update_interval = 1
     automatic_entropy_tuning = False
     hidden_size = 512
     learning_rate = 0.0001
     env_name = "FrankaKitchen-v1"
-    exploration_scaling_factor=1.5
+    exploration_scaling_factor=0.1
     max_episode_steps = 500
 
 
@@ -43,7 +43,7 @@ if __name__ == '__main__':
                 hidden_size=hidden_size, learning_rate=learning_rate, exploration_scaling_factor=exploration_scaling_factor)
     
     # Memory
-    memory = ReplayBuffer(replay_buffer_size, input_size=observation_size, n_actions=env.action_space.shape[0])
+    memory = ReplayBuffer(replay_buffer_size, input_size=observation_size, n_actions=env.action_space.shape[0], sad_robot=False)
 
     memory.load_from_csv(filename='checkpoints/human_memory.npz')
     time.sleep(2)
@@ -51,46 +51,19 @@ if __name__ == '__main__':
     # Training Loop
     total_numsteps = 0
     updates = 0
+    pretrain_noise_ratio = 0.1
+
+    agent.pretrain_critic_with_human_data(memory=memory, epochs=500, batch_size=64,
+                          summary_writer_name=f"critic_pretrain", noise_ratio=pretrain_noise_ratio)
 
     agent.pretrain_actor(memory=memory, epochs=2000, batch_size=64, 
-                         summary_writer_name=f"actor_pretrain")
-        
-    agent.pretrain_critic(memory=memory, epochs=1000, batch_size=64,
-                          summary_writer_name=f"critic_pretrain")
+                         summary_writer_name=f"actor_pretrain", noise_ratio=pretrain_noise_ratio)
 
     agent.train(env=env, env_name=env_name, memory=memory, episodes=10000, 
                 batch_size=batch_size, updates_per_step=updates_per_step,
-                summary_writer_name=f"live_train_alpha={alpha}_lr={learning_rate}_hs={hidden_size}_esp={exploration_scaling_factor}_a={alpha}",
+                summary_writer_name=f"live_train_lr={learning_rate}_hs={hidden_size}_esp={exploration_scaling_factor}_a={alpha}_no_noise_extra_rewards",
                 max_episode_steps=max_episode_steps)
 
-    # Training Phase 2
-    # LARGE_MAZE = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    #                 [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
-    #                 [1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1],
-    #                 [1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1],
-    #                 [1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1],
-    #                 [1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1],
-    #                 [1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1],
-    #                 [1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
-    #                 [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
-    
-    # max_episode_steps_phase_2 = 500
-    
-    # env = gym.make(env_name, max_episode_steps=max_episode_steps_phase_2, maze_map=LARGE_MAZE)
-    # env = RoboGymObservationWrapper(env)
 
-    # observation, info = env.reset()
-
-    # observation_size = observation.shape[0]
-
-    # # # Agent
-    # # agent = SAC(observation_size, env.action_space, gamma=gamma, tau=tau, alpha=alpha, policy=policy,
-    # #             target_update_interval=target_update_interval, automatic_entropy_tuning=automatic_entropy_tuning,
-    # #             hidden_size=hidden_size, learning_rate=learning_rate, exploration_scaling_factor=exploration_scaling_factor)
-
-    # agent.train(env=env, env_name=env_name, memory=memory, episodes=episodes, 
-    #             batch_size=batch_size, updates_per_step=updates_per_step,
-    #             summary_writer_name=f"large_maze_temp={alpha}_lr={learning_rate}_hs={hidden_size}_esp={exploration_scaling_factor}_a={alpha}",
-    #             max_episode_steps=max_episode_steps_phase_2)
 
     env.close()
