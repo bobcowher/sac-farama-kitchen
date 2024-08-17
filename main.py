@@ -43,7 +43,7 @@ if __name__ == '__main__':
                 hidden_size=hidden_size, learning_rate=learning_rate, exploration_scaling_factor=exploration_scaling_factor)
     
     # Memory
-    memory = ReplayBuffer(replay_buffer_size, input_size=observation_size, n_actions=env.action_space.shape[0], sad_robot=False)
+    memory = ReplayBuffer(replay_buffer_size, input_size=observation_size, n_actions=env.action_space.shape[0], augment_rewards=True)
 
     memory.load_from_csv(filename='checkpoints/human_memory.npz')
     time.sleep(2)
@@ -53,15 +53,14 @@ if __name__ == '__main__':
     updates = 0
     pretrain_noise_ratio = 0.1
 
-    # agent.pretrain_critic_with_human_data(memory=memory, epochs=500, batch_size=64,
-    #                       summary_writer_name=f"critic_pretrain", noise_ratio=pretrain_noise_ratio)
+    pretrain_epochs = 500
 
-    agent.pretrain_actor(memory=memory, epochs=50, batch_size=64, 
-                         summary_writer_name=f"actor_pretrain_only", noise_ratio=pretrain_noise_ratio)
+    # agent.pretrain_actor_and_critic(memory=memory, epochs=pretrain_epochs, batch_size=64, 
+    #                      summary_writer_name=f"pretrain_both_pt_epochs={pretrain_epochs}", noise_ratio=pretrain_noise_ratio)
 
     agent.train(env=env, env_name=env_name, memory=memory, episodes=10000, 
                 batch_size=batch_size, updates_per_step=updates_per_step,
-                summary_writer_name=f"live_train_lr={learning_rate}_hs={hidden_size}_esp={exploration_scaling_factor}_a={alpha}_pre_train_actor_only",
+                summary_writer_name=f"live_train_lr={learning_rate}_hs={hidden_size}_esp={exploration_scaling_factor}_a={alpha}_no_pretrain",
                 max_episode_steps=max_episode_steps)
 
 
