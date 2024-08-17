@@ -38,9 +38,8 @@ if __name__ == '__main__':
     observation_size = observation.shape[0]
 
     # # Agent
-    agent = Agent(observation_size, env.action_space, gamma=gamma, tau=tau, alpha=alpha, policy=policy,
-                target_update_interval=target_update_interval, automatic_entropy_tuning=automatic_entropy_tuning,
-                hidden_size=hidden_size, learning_rate=learning_rate)
+    agent = Agent(observation_size, env.action_space, gamma=gamma, tau=tau, alpha=alpha,
+                target_update_interval=target_update_interval, hidden_size=hidden_size, learning_rate=learning_rate)
 
     agent.load_checkpoint(evaluate=True)
 

@@ -1,7 +1,9 @@
 import numpy as np
 
 class ReplayBuffer():
-    def __init__(self, max_size, input_size, n_actions, sad_robot=False, augment_data=False, augment_rewards=False, augment_noise_ratio=0.1):
+    def __init__(self, max_size, input_size, n_actions, sad_robot=False, 
+                 augment_data=False, augment_rewards=False, expert_data=False,
+                 augment_noise_ratio=0.1):
         self.mem_size = max_size
         self.mem_ctr = 0
         self.state_memory = np.zeros((self.mem_size, input_size))
@@ -13,7 +15,7 @@ class ReplayBuffer():
         self.augment_data = augment_data
         self.augment_rewards = augment_rewards
         self.augment_noise_ratio = augment_noise_ratio # Only relevant if augment rewards is set. 
-        self.expert_data = False
+        self.expert_data = expert_data
         self.expert_data_cutoff = 0
 
 

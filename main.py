@@ -26,10 +26,12 @@ if __name__ == '__main__':
     env_name = "FrankaKitchen-v1"
     max_episode_steps = 500
 
+    task = "microwave"
+    task_no_spaces = task.replace(" ", "_")
 
     # Training Phase 1
 
-    env = gym.make(env_name, max_episode_steps=max_episode_steps, tasks_to_complete=['microwave'])
+    env = gym.make(env_name, max_episode_steps=max_episode_steps, tasks_to_complete=[task])
     env = RoboGymObservationWrapper(env)
 
     observation, info = env.reset()
@@ -37,14 +39,16 @@ if __name__ == '__main__':
     observation_size = observation.shape[0]
 
     # # Agent
-    agent = Agent(observation_size, env.action_space, gamma=gamma, tau=tau, alpha=alpha, policy=policy,
-                target_update_interval=target_update_interval, automatic_entropy_tuning=automatic_entropy_tuning,
-                hidden_size=hidden_size, learning_rate=learning_rate)
+    agent = Agent(observation_size, env.action_space, gamma=gamma, tau=tau, 
+                  alpha=alpha, target_update_interval=target_update_interval,
+                  hidden_size=hidden_size, learning_rate=learning_rate)
     
     # Memory
-    memory = ReplayBuffer(replay_buffer_size, input_size=observation_size, n_actions=env.action_space.shape[0], augment_rewards=True)
+    memory = ReplayBuffer(replay_buffer_size, input_size=observation_size, 
+                          n_actions=env.action_space.shape[0], augment_rewards=True,
+                          expert_data=True)
 
-    memory.load_from_csv(filename='checkpoints/human_memory.npz')
+    memory.load_from_csv(filename=f'checkpoints/human_memory_{task_no_spaces}.npz')
     time.sleep(2)
 
     # Training Loop
@@ -52,13 +56,19 @@ if __name__ == '__main__':
     updates = 0
     pretrain_noise_ratio = 0.1
 
-    pretrain_epochs = 500
-
-    agent.train(env=env, env_name=env_name, memory=memory, episodes=10000, 
+    # Phase 1
+    agent.train(env=env, env_name=env_name, memory=memory, episodes=1000, 
                 batch_size=batch_size, updates_per_step=updates_per_step,
-                summary_writer_name=f"live_train_lr={learning_rate}_hs={hidden_size}_esp={exploration_scaling_factor}_a={alpha}_no_pretrain_weighted_data",
+                summary_writer_name=f"live_train_phase_1_{task_no_spaces}",
                 max_episode_steps=max_episode_steps)
 
+    # Phase 2
+    # We're disabling the weighting towards expert data, not the expert data itself.
+    memory.expert_data = False
+    agent.train(env=env, env_name=env_name, memory=memory, episodes=1000, 
+                batch_size=batch_size, updates_per_step=updates_per_step,
+                summary_writer_name=f"live_train_phase_2_{task_no_spaces}",
+                max_episode_steps=max_episode_steps)
 
 
     env.close()

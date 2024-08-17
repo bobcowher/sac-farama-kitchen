@@ -4,6 +4,7 @@ import numpy as np
 from agent import Agent
 from gym_robotics_custom import RoboGymObservationWrapper
 from buffer import ReplayBuffer
+from meta_agent import MetaAgent
 
 # Start test to ensure new memories are getting rolled onto the stack. 
 buffer_size = 10
@@ -45,8 +46,9 @@ max_episode_steps = 500
 
 
 # Training Phase 1
+tasks = ['microwave', 'top burner']
 
-env = gym.make(env_name, max_episode_steps=max_episode_steps, tasks_to_complete=['microwave'])
+env = gym.make(env_name, max_episode_steps=max_episode_steps, tasks_to_complete=tasks)
 env = RoboGymObservationWrapper(env)
 
 observation, info = env.reset()
@@ -54,14 +56,14 @@ observation, info = env.reset()
 observation_size = observation.shape[0]
 
 # # Agent
-agent = Agent(observation_size, env.action_space, gamma=gamma, tau=tau, alpha=alpha, policy=policy,
-            target_update_interval=target_update_interval, automatic_entropy_tuning=automatic_entropy_tuning,
-            hidden_size=hidden_size, learning_rate=learning_rate, exploration_scaling_factor=exploration_scaling_factor)
+agent = Agent(observation_size, env.action_space, gamma=gamma, tau=tau, alpha=alpha, 
+              target_update_interval=target_update_interval, hidden_size=hidden_size, 
+              learning_rate=learning_rate, goal='microwave')
 
 # Memory
 memory = ReplayBuffer(replay_buffer_size, input_size=observation_size, n_actions=env.action_space.shape[0], sad_robot=True)
 
-memory.load_from_csv(filename='checkpoints/human_memory.npz')
+memory.load_from_csv(filename='checkpoints/human_memory_microwave.npz')
 
 rewards = [reward for reward in memory.reward_memory if reward > 0]
 
@@ -73,5 +75,14 @@ state_batch, action_batch, reward_batch, next_state_batch, mask_batch = memory.s
 print(reward_batch)
 
 print("Reward batch with augmentation")
-state_batch, action_batch, reward_batch, next_state_batch, mask_batch = memory.sample_buffer(batch_size=16, augment_data=True)
+memory.augment_data = True
+state_batch, action_batch, reward_batch, next_state_batch, mask_batch = memory.sample_buffer(batch_size=16)
 print(reward_batch)
+
+# Test Meta Agent
+env = gym.make(env_name, max_episode_steps=max_episode_steps, tasks_to_complete=tasks, render_mode='human')
+env = RoboGymObservationWrapper(env)
+
+meta_agent = MetaAgent(env, tasks)
+
+meta_agent.test()

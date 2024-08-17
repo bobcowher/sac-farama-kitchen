@@ -29,6 +29,8 @@ class RoboGymObservationWrapper(ObservationWrapper):
         obs_achieved_goal = observation['achieved_goal']
         obs_desired_goal = observation['desired_goal']
 
+        # print(obs_achieved_goal)
+
         obs_concatenated = np.concatenate((obs_pos, obs_achieved_goal[self.goal], obs_desired_goal[self.goal]))
 
         return obs_concatenated

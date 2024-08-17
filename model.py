@@ -32,7 +32,7 @@ class QNetwork(nn.Module):
 
         self.name = name
         self.checkpoint_dir = checkpoint_dir
-        self.checkpoint_file = os.path.join(self.checkpoint_dir, name+'_sac')
+        self.checkpoint_file = os.path.join(self.checkpoint_dir, name)
 
         self.apply(weights_init_)
 
@@ -71,7 +71,7 @@ class GaussianPolicy(nn.Module):
 
         self.name = name
         self.checkpoint_dir = checkpoint_dir
-        self.checkpoint_file = os.path.join(self.checkpoint_dir, name+'_sac')
+        self.checkpoint_file = os.path.join(self.checkpoint_dir, name)
 
         self.apply(weights_init_)
 
