@@ -59,10 +59,10 @@ class Controller:
             action[5] = -1
             print("Button 5 pressed")
         elif self.joystick.get_button(6):  # Circle button
-            action[6] = 1
+            action[6] = -1
             print("Button 6 pressed")
         elif self.joystick.get_button(7):
-            action[6] = -1
+            action[6] = 1
             print("Button 7 pressed")
         elif self.joystick.get_button(8):  # Circle button
             action[7] = 1
