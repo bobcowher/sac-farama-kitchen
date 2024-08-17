@@ -24,7 +24,6 @@ if __name__ == '__main__':
     hidden_size = 512
     learning_rate = 0.0001
     env_name = "FrankaKitchen-v1"
-    exploration_scaling_factor=0.1
     max_episode_steps = 500
 
 
@@ -40,7 +39,7 @@ if __name__ == '__main__':
     # # Agent
     agent = Agent(observation_size, env.action_space, gamma=gamma, tau=tau, alpha=alpha, policy=policy,
                 target_update_interval=target_update_interval, automatic_entropy_tuning=automatic_entropy_tuning,
-                hidden_size=hidden_size, learning_rate=learning_rate, exploration_scaling_factor=exploration_scaling_factor)
+                hidden_size=hidden_size, learning_rate=learning_rate)
     
     # Memory
     memory = ReplayBuffer(replay_buffer_size, input_size=observation_size, n_actions=env.action_space.shape[0], augment_rewards=True)
@@ -54,9 +53,6 @@ if __name__ == '__main__':
     pretrain_noise_ratio = 0.1
 
     pretrain_epochs = 500
-
-    # agent.pretrain_actor_and_critic(memory=memory, epochs=pretrain_epochs, batch_size=64, 
-    #                      summary_writer_name=f"pretrain_both_pt_epochs={pretrain_epochs}", noise_ratio=pretrain_noise_ratio)
 
     agent.train(env=env, env_name=env_name, memory=memory, episodes=10000, 
                 batch_size=batch_size, updates_per_step=updates_per_step,

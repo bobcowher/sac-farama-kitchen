@@ -26,7 +26,6 @@ if __name__ == '__main__':
     learning_rate = 0.0001
     max_episode_steps=500 # max episode steps
     env_name = "FrankaKitchen-v1"
-    exploration_scaling_factor=0.01
 
     env = gym.make(env_name, max_episode_steps=max_episode_steps, tasks_to_complete=['microwave'], render_mode='human')
     env = RoboGymObservationWrapper(env)
@@ -41,7 +40,7 @@ if __name__ == '__main__':
     # # Agent
     agent = Agent(observation_size, env.action_space, gamma=gamma, tau=tau, alpha=alpha, policy=policy,
                 target_update_interval=target_update_interval, automatic_entropy_tuning=automatic_entropy_tuning,
-                hidden_size=hidden_size, learning_rate=learning_rate, exploration_scaling_factor=exploration_scaling_factor)
+                hidden_size=hidden_size, learning_rate=learning_rate)
 
     agent.load_checkpoint(evaluate=True)
 
