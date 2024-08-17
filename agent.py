@@ -7,7 +7,7 @@ from model import *
 from torch.utils.tensorboard import SummaryWriter
 import datetime
 from buffer import ReplayBuffer
-
+import time
 
 
 class Agent(object):
@@ -204,6 +204,7 @@ class Agent(object):
                 mask = 1 if episode_steps == max_episode_steps else float(not done)
 
                 state = next_state
+                time.sleep(0.01)
 
             print("Episode: {}, episode steps: {}, reward: {}".format(i_episode,
                                                                                         episode_steps,

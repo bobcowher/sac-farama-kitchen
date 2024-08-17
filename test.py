@@ -12,7 +12,7 @@ from torch.utils.tensorboard import SummaryWriter
 if __name__ == '__main__':
 
     replay_buffer_size = 10000000
-    episodes = 3
+    episodes = 10
     warmup = 20
     batch_size = 64
     updates_per_step = 1
