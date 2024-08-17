@@ -30,9 +30,14 @@ if __name__ == '__main__':
     env_name = "FrankaKitchen-v1"
     exploration_scaling_factor=0.01
 
-    env = gym.make(env_name, max_episode_steps=max_episode_steps, tasks_to_complete=['microwave'], render_mode='human', autoreset=False)
+    # task = 'microwave'
+    # task = 'kettle'
+    task = "top burner"
+    task_no_spaces = task.replace(" ", "_")
 
-    env = RoboGymObservationWrapper(env)
+    env = gym.make(env_name, max_episode_steps=max_episode_steps, tasks_to_complete=[task], render_mode='human', autoreset=False)
+
+    env = RoboGymObservationWrapper(env, goal=task)
 
     print(env.env.env.env.env.model.opt.gravity)
 
@@ -45,7 +50,7 @@ if __name__ == '__main__':
 
     memory = ReplayBuffer(replay_buffer_size, input_size=state_size, n_actions=env.action_space.shape[0])
 
-    memory.load_from_csv(filename='checkpoints/human_memory.npz')
+    memory.load_from_csv(filename=f'checkpoints/human_memory_{task_no_spaces}.npz')
     
     starting_memory_size = memory.mem_ctr
     
@@ -82,7 +87,7 @@ if __name__ == '__main__':
             time.sleep(0.05)
         
 
-        memory.save_to_csv(filename='checkpoints/human_memory.npz')
+        memory.save_to_csv(filename=f'checkpoints/human_memory_{task_no_spaces}.npz')
 
 
 
