@@ -13,6 +13,8 @@ class ReplayBuffer():
         self.augment_data = augment_data
         self.augment_rewards = augment_rewards
         self.augment_noise_ratio = augment_noise_ratio # Only relevant if augment rewards is set. 
+        self.expert_data = False
+        self.expert_data_cutoff = 0
 
 
     def __len__(self):
@@ -37,7 +39,13 @@ class ReplayBuffer():
 
     def sample_buffer(self, batch_size):
         max_mem = min(self.mem_ctr, self.mem_size)
-        batch = np.random.choice(max_mem, batch_size)
+        
+        if self.expert_data:
+            random_batch = np.random.choice(max_mem, int(batch_size / 2))
+            expert_batch = np.random.choice(self.expert_data_cutoff, int(batch_size / 2))
+            batch = np.concatenate((random_batch, expert_batch))
+        else:
+            batch = np.random.choice(max_mem, batch_size)
 
         states = self.state_memory[batch]
         states_ = self.new_state_memory[batch]
@@ -73,7 +81,7 @@ class ReplayBuffer():
                  done=self.terminal_memory[:self.mem_ctr])
         print(f"Saved {filename}")
 
-    def load_from_csv(self, filename='checkpoints/memory.npz'):
+    def load_from_csv(self, filename='checkpoints/memory.npz', expert_data=True):
         try:
             data = np.load(filename)
             self.mem_ctr = len(data['state'])
@@ -84,6 +92,11 @@ class ReplayBuffer():
             self.terminal_memory[:self.mem_ctr] = data['done']
             print(f"Successfully loaded {filename} into memory")
             print(f"{self.mem_ctr} memories loaded")
+            
+            if(expert_data):
+                self.expert_data = expert_data
+                self.expert_data_cutoff = self.mem_ctr
+
         except:
             print(f"Unable to load memory from ")
 
