@@ -53,15 +53,15 @@ if __name__ == '__main__':
     updates = 0
     pretrain_noise_ratio = 0.1
 
-    agent.pretrain_critic_with_human_data(memory=memory, epochs=500, batch_size=64,
-                          summary_writer_name=f"critic_pretrain", noise_ratio=pretrain_noise_ratio)
+    # agent.pretrain_critic_with_human_data(memory=memory, epochs=500, batch_size=64,
+    #                       summary_writer_name=f"critic_pretrain", noise_ratio=pretrain_noise_ratio)
 
-    agent.pretrain_actor(memory=memory, epochs=2000, batch_size=64, 
-                         summary_writer_name=f"actor_pretrain", noise_ratio=pretrain_noise_ratio)
+    agent.pretrain_actor(memory=memory, epochs=50, batch_size=64, 
+                         summary_writer_name=f"actor_pretrain_only", noise_ratio=pretrain_noise_ratio)
 
     agent.train(env=env, env_name=env_name, memory=memory, episodes=10000, 
                 batch_size=batch_size, updates_per_step=updates_per_step,
-                summary_writer_name=f"live_train_lr={learning_rate}_hs={hidden_size}_esp={exploration_scaling_factor}_a={alpha}_no_noise_extra_rewards",
+                summary_writer_name=f"live_train_lr={learning_rate}_hs={hidden_size}_esp={exploration_scaling_factor}_a={alpha}_pre_train_actor_only",
                 max_episode_steps=max_episode_steps)
 
 

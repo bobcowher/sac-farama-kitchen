@@ -101,7 +101,7 @@ class Agent(object):
             epoch_loss_critic = 0
 
             for _ in range(len(memory) // batch_size):
-                state_batch, action_batch, reward_batch, next_state_batch, mask_batch = memory.sample_buffer(batch_size=batch_size)
+                state_batch, action_batch, reward_batch, next_state_batch, mask_batch = memory.sample_buffer(batch_size=batch_size, augment_data=True)
                 
                 state_batch = torch.FloatTensor(state_batch).to(self.device)
                 next_state_batch = torch.FloatTensor(next_state_batch).to(self.device)

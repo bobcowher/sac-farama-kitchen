@@ -1,7 +1,7 @@
 import numpy as np
 
 class ReplayBuffer():
-    def __init__(self, max_size, input_size, n_actions):
+    def __init__(self, max_size, input_size, n_actions, sad_robot=False, augment_data=False, augment_rewards=False, augment_noise_ratio=0.1):
         self.mem_size = max_size
         self.mem_ctr = 0
         self.state_memory = np.zeros((self.mem_size, input_size))
@@ -9,6 +9,11 @@ class ReplayBuffer():
         self.action_memory = np.zeros((self.mem_size, n_actions))
         self.reward_memory = np.zeros(self.mem_size)
         self.terminal_memory = np.zeros(self.mem_size, dtype=bool)
+        self.sad_robot = sad_robot
+        self.augment_data = augment_data
+        self.augment_rewards = augment_rewards
+        self.augment_noise_ratio = augment_noise_ratio # Only relevant if augment rewards is set. 
+
 
     def __len__(self):
         return self.mem_ctr
@@ -30,7 +35,7 @@ class ReplayBuffer():
 
         self.mem_ctr += 1
 
-    def sample_buffer(self, batch_size, augment_data=False, noise_ratio=0.1):
+    def sample_buffer(self, batch_size):
         max_mem = min(self.mem_ctr, self.mem_size)
         batch = np.random.choice(max_mem, batch_size)
 
@@ -40,16 +45,22 @@ class ReplayBuffer():
         rewards = self.reward_memory[batch]
         dones = self.terminal_memory[batch]
 
-        if augment_data:
+        if self.augment_data:
             # Compute dynamic noise levels based on the average absolute values
-            state_noise_std = noise_ratio * np.mean(np.abs(states))
-            action_noise_std = noise_ratio * np.mean(np.abs(actions))
-            reward_noise_std = noise_ratio * np.mean(np.abs(rewards))
+            state_noise_std = self.augment_noise_ratio * np.mean(np.abs(states))
+            action_noise_std = self.augment_noise_ratio * np.mean(np.abs(actions))
+            reward_noise_std = self.augment_noise_ratio * np.mean(np.abs(rewards))
 
             # Adding dynamic noise to states, actions, and rewards
             states = states + np.random.normal(0, state_noise_std, states.shape)
             actions = actions + np.random.normal(0, action_noise_std, actions.shape)
-            rewards = rewards + np.random.normal(0, reward_noise_std, rewards.shape)
+            # rewards = rewards + np.random.normal(0, reward_noise_std, rewards.shape)
+
+        if self.augment_rewards:
+            rewards = rewards * 100
+
+            if self.sad_robot:
+                rewards = rewards - 1
 
         return states, actions, rewards, states_, dones
 
