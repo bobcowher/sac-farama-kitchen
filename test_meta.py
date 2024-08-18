@@ -7,12 +7,13 @@ import datetime
 from agent import Agent
 from gym_robotics_custom import RoboGymObservationWrapper
 from torch.utils.tensorboard import SummaryWriter
+from meta_agent import MetaAgent
 
 
 if __name__ == '__main__':
 
     replay_buffer_size = 10000000
-    episodes = 2
+    episodes = 10
     warmup = 20
     batch_size = 64
     updates_per_step = 1
@@ -27,13 +28,10 @@ if __name__ == '__main__':
     max_episode_steps=500 # max episode steps
     env_name = "FrankaKitchen-v1"
 
-    # task = "top burner"
-    task = "microwave"
-    task_no_spaces = task.replace(" ", "_")
+    tasks = ['top burner', 'microwave']
 
-
-    env = gym.make(env_name, max_episode_steps=max_episode_steps, tasks_to_complete=[task], render_mode='human')
-    env = RoboGymObservationWrapper(env, goal=task)
+    env = gym.make(env_name, max_episode_steps=max_episode_steps, tasks_to_complete=tasks, render_mode='human')
+    env = RoboGymObservationWrapper(env)
 
     # print(f"Obervation space: {env.observation_space}")
     print(f"Action space: {env.action_space}")
@@ -42,15 +40,9 @@ if __name__ == '__main__':
 
     observation_size = observation.shape[0]
 
-    print(observation_size)
-
     # # Agent
-    agent = Agent(observation_size, env.action_space, gamma=gamma, tau=tau, alpha=alpha,
-                target_update_interval=target_update_interval, hidden_size=hidden_size, 
-                learning_rate=learning_rate, goal=task_no_spaces)
+    meta_agent = MetaAgent(env, tasks)
 
-    agent.load_checkpoint(evaluate=True)
-
-    agent.test(env=env, episodes=episodes, max_episode_steps=500)
+    meta_agent.test()
 
     env.close()

@@ -17,14 +17,11 @@ class MetaAgent(object):
         goal_list_no_spaces = [a.replace(" ", "_") for a in goal_list]
         self.goal_dict = dict(zip(goal_list_no_spaces, goal_list))
         self.env = env
+        self.agent: Agent = None
         
-
-        observation, info = env.reset()
-        self.observation_size = observation.shape[0]
-
         self.initialize_agents()
 
-        self.agent = None
+
         
     
     def initialize_agents(self, gamma=0.99, tau=0.005, alpha=0.1, 
@@ -32,20 +29,28 @@ class MetaAgent(object):
                           learning_rate=0.0001):
         
         for goal in self.goal_dict:
-            agent = Agent(self.observation_size, self.env.action_space, gamma=gamma, tau=tau, alpha=alpha,
+
+            self.env.set_goal(self.goal_dict[goal])
+            observation, info = self.env.reset()
+            observation_size = observation.shape[0]
+
+            agent = Agent(observation_size, self.env.action_space, gamma=gamma, tau=tau, alpha=alpha,
                           target_update_interval=target_update_interval, hidden_size=hidden_size, 
                           learning_rate=learning_rate, goal=goal)
-            
+            print(f"Loading checkpoint for {goal}")
             agent.load_checkpoint(evaluate=True)
             self.agent_dict[goal] = agent
 
 
     def test(self):
+        action = None
+
         for goal in self.goal_dict:
+            print(f"Attempting goal {goal}..")
             self.env.set_goal(self.goal_dict[goal])
             self.agent = self.agent_dict[goal]
 
-            self.agent.test(env=self.env, episodes=1, max_episode_steps=500)
+            action = self.agent.test(env=self.env, episodes=1, max_episode_steps=500, prev_action=action)
 
 
 

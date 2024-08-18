@@ -8,7 +8,7 @@ from torch.utils.tensorboard import SummaryWriter
 import datetime
 from buffer import ReplayBuffer
 import time
-
+from gym_robotics_custom import RoboGymObservationWrapper
 
 class Agent(object):
     def __init__(self, num_inputs, action_space, gamma, tau, alpha, target_update_interval,
@@ -96,8 +96,6 @@ class Agent(object):
 
     def train(self, env, env_name, memory, episodes=1000, batch_size=64, updates_per_step=1, summary_writer_name="", max_episode_steps=100):
 
-        warmup = 20
-
         # Tesnorboard
         summary_writer_name = f'runs/{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_' + summary_writer_name
         writer = SummaryWriter(summary_writer_name)
@@ -113,10 +111,8 @@ class Agent(object):
             state, _ = env.reset()
 
             while not done and episode_steps < max_episode_steps:
-                if warmup > i_episode:
-                    action = env.action_space.sample()  # Sample random action
-                else:
-                    action = self.select_action(state)  # Sample action from policy
+
+                action = self.select_action(state)  # Sample action from policy
 
                 if memory.can_sample(batch_size=batch_size):
                     # Number of updates per step in environment
@@ -155,13 +151,17 @@ class Agent(object):
                 self.save_checkpoint(env_name=env_name)
 
 
-    def test(self, env, episodes=10, max_episode_steps=500):
+    def test(self, env : RoboGymObservationWrapper, episodes=10, max_episode_steps=500, prev_action=None):
 
         for i_episode in range(episodes):
             episode_reward = 0
             episode_steps = 0
             done = False
-            state, _ = env.reset()
+
+            if prev_action is not None:
+                state, reward, done, _, _ = env.step(prev_action)
+            else:    
+                state, _ = env.reset()
 
             while not done and episode_steps < max_episode_steps:
 
@@ -172,10 +172,9 @@ class Agent(object):
                 # print(next_state.shape)
                 episode_steps += 1
 
-                print(reward)
-
                 if reward == 1:
                     done = True
+                    prev_action = action
                 episode_reward += reward
 
                 # Ignore the "done" signal if it comes from hitting the time horizon.
@@ -183,11 +182,13 @@ class Agent(object):
                 mask = 1 if episode_steps == max_episode_steps else float(not done)
 
                 state = next_state
-                time.sleep(0.01)
+                time.sleep(0.05)
 
             print("Episode: {}, episode steps: {}, reward: {}".format(i_episode,
                                                                                         episode_steps,
                                                                                         round(episode_reward, 2)))
+            
+            return prev_action
 
     def save_models(self):
         self.actor.save_checkpoint()

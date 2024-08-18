@@ -2,7 +2,7 @@ import numpy as np
 
 class ReplayBuffer():
     def __init__(self, max_size, input_size, n_actions, sad_robot=False, 
-                 augment_data=False, augment_rewards=False, expert_data=False,
+                 augment_data=False, augment_rewards=False, expert_data_ratio=0.1,
                  augment_noise_ratio=0.1):
         self.mem_size = max_size
         self.mem_ctr = 0
@@ -15,7 +15,7 @@ class ReplayBuffer():
         self.augment_data = augment_data
         self.augment_rewards = augment_rewards
         self.augment_noise_ratio = augment_noise_ratio # Only relevant if augment rewards is set. 
-        self.expert_data = expert_data
+        self.expert_data_ratio = expert_data_ratio
         self.expert_data_cutoff = 0
 
 
@@ -42,9 +42,10 @@ class ReplayBuffer():
     def sample_buffer(self, batch_size):
         max_mem = min(self.mem_ctr, self.mem_size)
         
-        if self.expert_data:
-            random_batch = np.random.choice(max_mem, int(batch_size / 2))
-            expert_batch = np.random.choice(self.expert_data_cutoff, int(batch_size / 2))
+        if self.expert_data_ratio > 0:
+            expert_batch_quantity = int(batch_size * self.expert_data_ratio)
+            random_batch = np.random.choice(max_mem, batch_size - expert_batch_quantity)
+            expert_batch = np.random.choice(self.expert_data_cutoff, expert_batch_quantity)
             batch = np.concatenate((random_batch, expert_batch))
         else:
             batch = np.random.choice(max_mem, batch_size)

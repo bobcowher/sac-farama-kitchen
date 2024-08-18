@@ -81,7 +81,7 @@ if __name__ == '__main__':
                 next_state, reward, done, _, _ = env.step(action)
                 mask = 1 if episode_steps == max_episode_steps else float(not done)
                 memory.store_transition(state, action, reward, next_state, mask) 
-                print(f"Episode step: {episode_steps} Reward: , {reward} Successfully added {memory.mem_ctr - starting_memory_size} steps to memory")
+                print(f"Episode step: {episode_steps} Reward: , {reward} Successfully added {memory.mem_ctr - starting_memory_size} steps to memory. Total: {memory.mem_ctr}")
                 state = next_state
                 episode_steps += 1
             time.sleep(0.05)
