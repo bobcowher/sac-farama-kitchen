@@ -28,7 +28,7 @@ if __name__ == '__main__':
     env_name = "FrankaKitchen-v1"
 
     # task = "top burner"
-    task = "microwave"
+    task = "slide cabinet"
     task_no_spaces = task.replace(" ", "_")
 
 

@@ -79,10 +79,3 @@ memory.augment_data = True
 state_batch, action_batch, reward_batch, next_state_batch, mask_batch = memory.sample_buffer(batch_size=16)
 print(reward_batch)
 
-# Test Meta Agent
-env = gym.make(env_name, max_episode_steps=max_episode_steps, tasks_to_complete=tasks, render_mode='human')
-env = RoboGymObservationWrapper(env)
-
-meta_agent = MetaAgent(env, tasks)
-
-meta_agent.test()

@@ -25,6 +25,7 @@ class Controller:
         action[1] = self.joystick.get_axis(1)  # Left stick vertical
 
         action[0] = action[0] * -1
+        action[1] = action[1] * -1
 
         # Map right joystick to panda0_joint3 and panda0_joint4 angular velocity
         action[2] = self.joystick.get_axis(3)  # Right stick vertical

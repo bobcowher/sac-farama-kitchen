@@ -28,7 +28,7 @@ if __name__ == '__main__':
     max_episode_steps=500 # max episode steps
     env_name = "FrankaKitchen-v1"
 
-    tasks = ['top burner', 'microwave']
+    tasks = ['top burner', 'microwave', 'slide cabinet']
 
     env = gym.make(env_name, max_episode_steps=max_episode_steps, tasks_to_complete=tasks, render_mode='human')
     env = RoboGymObservationWrapper(env)

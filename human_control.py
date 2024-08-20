@@ -32,7 +32,8 @@ if __name__ == '__main__':
 
     # task = 'microwave'
     # task = 'kettle'
-    task = "top burner"
+    # task = "top burner"
+    task = "hinge cabinet"
     task_no_spaces = task.replace(" ", "_")
 
     env = gym.make(env_name, max_episode_steps=max_episode_steps, tasks_to_complete=[task], render_mode='human', autoreset=False)
