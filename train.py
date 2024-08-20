@@ -26,7 +26,8 @@ if __name__ == '__main__':
     env_name = "FrankaKitchen-v1"
     max_episode_steps = 500
 
-    task = "slide cabinet"
+    # task = "slide cabinet"
+    task = "hinge cabinet"
     task_no_spaces = task.replace(" ", "_")
 
     # Training Phase 1
