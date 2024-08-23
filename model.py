@@ -14,9 +14,9 @@ def weights_init_(m):
         torch.nn.init.xavier_uniform_(m.weight, gain=1)
         torch.nn.init.constant_(m.bias, 0)
 
-class QNetwork(nn.Module):
+class Critic(nn.Module):
     def __init__(self, num_inputs, num_actions, hidden_dim, checkpoint_dir='checkpoints', name='q_network'):
-        super(QNetwork, self).__init__()
+        super(Critic, self).__init__()
 
         # Q1 architecture
         self.linear1 = nn.Linear(num_inputs + num_actions, hidden_dim)
@@ -58,9 +58,9 @@ class QNetwork(nn.Module):
         self.load_state_dict(torch.load(self.checkpoint_file))
 
 
-class GaussianPolicy(nn.Module):
+class Policy(nn.Module):
     def __init__(self, num_inputs, num_actions, hidden_dim, action_space=None, checkpoint_dir='checkpoints', name='policy_network'):
-        super(GaussianPolicy, self).__init__()
+        super(Policy, self).__init__()
         
         self.linear1 = nn.Linear(num_inputs, hidden_dim)
         self.linear2 = nn.Linear(hidden_dim, hidden_dim)
@@ -111,7 +111,7 @@ class GaussianPolicy(nn.Module):
     def to(self, device):
         self.action_scale = self.action_scale.to(device)
         self.action_bias = self.action_bias.to(device)
-        return super(GaussianPolicy, self).to(device)
+        return super(Policy, self).to(device)
 
     def save_checkpoint(self):
         torch.save(self.state_dict(), self.checkpoint_file)

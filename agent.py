@@ -22,13 +22,13 @@ class Agent(object):
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        self.critic = QNetwork(num_inputs, action_space.shape[0], hidden_size, name=f"critic_{goal}").to(device=self.device)
+        self.critic = Critic(num_inputs, action_space.shape[0], hidden_size, name=f"critic_{goal}").to(device=self.device)
         self.critic_optim = Adam(self.critic.parameters(), lr=learning_rate)
 
-        self.critic_target = QNetwork(num_inputs, action_space.shape[0], hidden_size, name=f"critic_target_{goal}").to(self.device)
+        self.critic_target = Critic(num_inputs, action_space.shape[0], hidden_size, name=f"critic_target_{goal}").to(self.device)
         hard_update(self.critic_target, self.critic)
 
-        self.policy = GaussianPolicy(num_inputs, action_space.shape[0], hidden_size, action_space, name=f"policy_{goal}").to(self.device)
+        self.policy = Policy(num_inputs, action_space.shape[0], hidden_size, action_space, name=f"policy_{goal}").to(self.device)
         self.policy_optim = Adam(self.policy.parameters(), lr=learning_rate)
 
 
