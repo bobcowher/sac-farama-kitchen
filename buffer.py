@@ -23,7 +23,7 @@ class ReplayBuffer():
         return self.mem_ctr
 
     def can_sample(self, batch_size):
-        if self.mem_ctr > (batch_size * 5):
+        if self.mem_ctr > (batch_size * 1000):
             return True
         else:
             return False

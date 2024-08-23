@@ -94,9 +94,9 @@ class Agent(object):
         return qf1_loss.item(), qf2_loss.item(), policy_loss.item(), alpha_loss.item(), 0, alpha_tlogs.item()
 
 
-    def train(self, env, env_name, memory, episodes=1000, batch_size=64, updates_per_step=1, summary_writer_name="", max_episode_steps=100):
+    def train(self, env, env_name, memory, episodes=1000, batch_size=64, updates_per_step=1, summary_writer_name="", max_episode_steps=100,):
 
-        # Tesnorboard
+        # Tensorboard
         summary_writer_name = f'runs/{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_' + summary_writer_name
         writer = SummaryWriter(summary_writer_name)
 
@@ -148,7 +148,7 @@ class Agent(object):
                                                                                         episode_steps,
                                                                                         round(episode_reward, 2)))
             if i_episode % 10 == 0:
-                self.save_checkpoint(env_name=env_name)
+                self.save_checkpoint()
 
 
     def test(self, env : RoboGymObservationWrapper, episodes=10, max_episode_steps=500, prev_action=None):
@@ -165,7 +165,7 @@ class Agent(object):
 
             while not done and episode_steps < max_episode_steps:
 
-                action = self.select_action(state)  # Sample action from policy
+                action = self.select_action(state, evaluate=True)  # Sample action from policy
                 # print(f"Action: {action}")
 
                 next_state, reward, done, _, _ = env.step(action)  # Step
@@ -182,13 +182,15 @@ class Agent(object):
                 mask = 1 if episode_steps == max_episode_steps else float(not done)
 
                 state = next_state
-                time.sleep(0.05)
+
+                if env.env.render_mode == "human":
+                    time.sleep(0.05)    
 
             print("Episode: {}, episode steps: {}, reward: {}".format(i_episode,
                                                                                         episode_steps,
                                                                                         round(episode_reward, 2)))
             
-            return prev_action
+            return prev_action, episode_reward
 
     def save_models(self):
         self.actor.save_checkpoint()
@@ -199,7 +201,7 @@ class Agent(object):
         self.target_critic_2.save_checkpoint()
         self.predictive_model.save_checkpoint()
     # Save model parameters
-    def save_checkpoint(self, env_name, suffix=""):
+    def save_checkpoint(self, suffix=""):
         if not os.path.exists('checkpoints/'):
             os.makedirs('checkpoints/')
 

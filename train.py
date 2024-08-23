@@ -58,14 +58,14 @@ if __name__ == '__main__':
 
     # Phase 1
     memory.expert_data_ratio = 0.5
-    agent.train(env=env, env_name=env_name, memory=memory, episodes=100, 
+    agent.train(env=env, env_name=env_name, memory=memory, episodes=150, 
                 batch_size=batch_size, updates_per_step=updates_per_step,
                 summary_writer_name=f"live_train_phase_1_{task_no_spaces}",
                 max_episode_steps=max_episode_steps)
 
     # Phase 2
     memory.expert_data_ratio = 0.25
-    agent.train(env=env, env_name=env_name, memory=memory, episodes=200, 
+    agent.train(env=env, env_name=env_name, memory=memory, episodes=250, 
                 batch_size=batch_size, updates_per_step=updates_per_step,
                 summary_writer_name=f"live_train_phase_2_{task_no_spaces}",
                 max_episode_steps=max_episode_steps)
