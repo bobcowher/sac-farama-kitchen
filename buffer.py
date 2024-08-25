@@ -101,35 +101,42 @@ class ReplayBuffer():
                 self.expert_data_cutoff = self.mem_ctr
 
         except:
-            print(f"Unable to load memory from ")
+            print(f"Unable to load memory from {filename}")
 
 
-class CombinedReplayBuffer:
-
-    def __init__(self, buffers, percentages):
-        if len(buffers) != len(percentages):
-            raise ValueError("Number of buffers must match number of percentages")
-
-        if not np.isclose(sum(percentages), 1.0):
-            raise ValueError("Percentages must sum to 1")
-
-        self.buffers = buffers
-        self.percentages = percentages
+def classify_records_in_replay_buffer(replay_buffer, goal_start_map):
+    # Initialize a dictionary to count the occurrences of each goal
+    goal_counts = {goal: 0 for goal in goal_start_map.keys()}
+    
+    # Iterate over all records in the replay buffer
+    for i in range(len(replay_buffer)):
+        # Extract the state
+        state = replay_buffer.state_memory[i]
         
-    def sample_buffer(self, batch_size):
-        sizes = [int(batch_size * perc) for perc in self.percentages]
+        # The goal-related part of the state starts after the first 59 entries
+        goal_part = state[59:]
         
-        if any(not buf.can_sample(size) for buf, size in zip(self.buffers, sizes)):
-            raise ValueError("One of the buffers cannot currently sample the required batch size")
+        # Dictionary to store the "score" for each goal based on non-zero values
+        goal_scores = {goal: 0 for goal in goal_start_map.keys()}
         
-        sampled_data = [buf.sample_buffer(size) for buf, size in zip(self.buffers, sizes)]
+        # Evaluate each goal segment separately
+        for goal, start_idx in goal_start_map.items():
+            # Determine the length of the segment by looking for where the next goal starts
+            if goal != 'kettle':  # If not the last goal, look for the next goal's start
+                end_idx = min([idx for g, idx in goal_start_map.items() if idx > start_idx])
+            else:  # If 'kettle', it's the last goal, so take the rest of the array
+                end_idx = len(goal_part)
+                
+            # Extract the relevant segment for this goal
+            goal_segment = goal_part[start_idx:end_idx]
+            
+            # Calculate the score as the sum of absolute values (magnitude of non-zero values)
+            goal_scores[goal] = np.sum(np.abs(goal_segment))
         
-        states, actions, rewards, states_, dones = zip(*sampled_data)
+        # Determine the goal with the highest score
+        most_likely_goal = max(goal_scores, key=goal_scores.get)
         
-        states = np.concatenate(states, axis=0)
-        actions = np.concatenate(actions, axis=0)
-        rewards = np.concatenate(rewards, axis=0)
-        states_ = np.concatenate(states_, axis=0)
-        dones = np.concatenate(dones, axis=0)
-        
-        return states, actions, rewards, states_, dones
+        # Increment the count for the most likely goal
+        goal_counts[most_likely_goal] += 1
+    
+    return goal_counts
