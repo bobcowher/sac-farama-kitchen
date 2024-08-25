@@ -104,7 +104,7 @@ class ReplayBuffer():
             print(f"Unable to load memory from {filename}")
 
 
-def classify_records_in_replay_buffer(replay_buffer, goal_start_map):
+def classify_records_in_replay_buffer(replay_buffer, goal_start_map, threshold=0.1):
     # Initialize a dictionary to count the occurrences of each goal
     goal_counts = {goal: 0 for goal in goal_start_map.keys()}
     
@@ -115,9 +115,6 @@ def classify_records_in_replay_buffer(replay_buffer, goal_start_map):
         
         # The goal-related part of the state starts after the first 59 entries
         goal_part = state[59:]
-        
-        # Dictionary to store the "score" for each goal based on non-zero values
-        goal_scores = {goal: 0 for goal in goal_start_map.keys()}
         
         # Evaluate each goal segment separately
         for goal, start_idx in goal_start_map.items():
@@ -131,12 +128,10 @@ def classify_records_in_replay_buffer(replay_buffer, goal_start_map):
             goal_segment = goal_part[start_idx:end_idx]
             
             # Calculate the score as the sum of absolute values (magnitude of non-zero values)
-            goal_scores[goal] = np.sum(np.abs(goal_segment))
-        
-        # Determine the goal with the highest score
-        most_likely_goal = max(goal_scores, key=goal_scores.get)
-        
-        # Increment the count for the most likely goal
-        goal_counts[most_likely_goal] += 1
+            score = np.sum(np.abs(goal_segment))
+            
+            # Classify the record under this goal if the score exceeds the threshold
+            if score > threshold:
+                goal_counts[goal] += 1
     
     return goal_counts
