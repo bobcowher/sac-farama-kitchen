@@ -10,6 +10,17 @@ class RoboGymObservationWrapper(ObservationWrapper):
         env_model = env.env.env.env.model
         env_model.opt.gravity[:] = [0, 0, -1]
         self.goal = goal
+        self.goal_dict_max_length = 17
+        self.goal_start_map = {
+                'microwave': 0,
+                'top burner': 1,
+                'bottom burner': 3,
+                'light switch': 5,
+                'slide cabinet': 7,
+                'hinge cabinet': 8,
+                'kettle': 10
+            }
+        
 
     def set_goal(self, goal):
         self.goal = goal
@@ -29,9 +40,22 @@ class RoboGymObservationWrapper(ObservationWrapper):
         obs_achieved_goal = observation['achieved_goal']
         obs_desired_goal = observation['desired_goal']
 
-        # print(obs_achieved_goal)
+        obs_desired_goal = np.zeros(self.goal_dict_max_length)
+        obs_achieved_goal = np.zeros(self.goal_dict_max_length)
 
-        obs_concatenated = np.concatenate((obs_pos, obs_achieved_goal[self.goal], obs_desired_goal[self.goal]))
+        for key in observation['desired_goal']:
+            counter = 0
+            for val in observation['desired_goal'][key]:
+                obs_desired_goal[self.goal_start_map[key] + counter] = val
+                counter += 1
+
+        for key in observation['achieved_goal']:
+            counter = 0
+            for val in observation['achieved_goal'][key]:
+                obs_achieved_goal[self.goal_start_map[key] + counter] = val
+                counter += 1
+        
+        obs_concatenated = np.concatenate((obs_pos, obs_desired_goal, obs_achieved_goal))
 
         return obs_concatenated
 

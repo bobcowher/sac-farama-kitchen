@@ -104,7 +104,7 @@ class ReplayBuffer():
             print(f"Unable to load memory from {filename}")
 
 
-def classify_records_in_replay_buffer(replay_buffer, goal_start_map, threshold=0.1):
+def classify_records_in_replay_buffer(replay_buffer, goal_start_map, threshold=0.1, kettle_threshold=0.5, goal_length=17):
     # Initialize a dictionary to count the occurrences of each goal
     goal_counts = {goal: 0 for goal in goal_start_map.keys()}
     
@@ -116,22 +116,27 @@ def classify_records_in_replay_buffer(replay_buffer, goal_start_map, threshold=0
         # The goal-related part of the state starts after the first 59 entries
         goal_part = state[59:]
         
+        # Focus only on the desired_goal segment (first 17 entries after observation)
+        desired_goal = goal_part[:goal_length]
+        
         # Evaluate each goal segment separately
         for goal, start_idx in goal_start_map.items():
-            # Determine the length of the segment by looking for where the next goal starts
+            # Determine the end index for this goal segment
             if goal != 'kettle':  # If not the last goal, look for the next goal's start
                 end_idx = min([idx for g, idx in goal_start_map.items() if idx > start_idx])
-            else:  # If 'kettle', it's the last goal, so take the rest of the array
-                end_idx = len(goal_part)
-                
+            else:  # If 'kettle', it's the last goal, so take the rest of the segment
+                end_idx = goal_length  # Ensure we're not exceeding the goal_length
+            
             # Extract the relevant segment for this goal
-            goal_segment = goal_part[start_idx:end_idx]
+            goal_segment = desired_goal[start_idx:end_idx]
             
             # Calculate the score as the sum of absolute values (magnitude of non-zero values)
             score = np.sum(np.abs(goal_segment))
             
-            # Classify the record under this goal if the score exceeds the threshold
-            if score > threshold:
+            # Apply a higher threshold for "kettle" to reduce false positives
+            if goal == 'kettle' and score > kettle_threshold:
+                goal_counts[goal] += 1
+            elif goal != 'kettle' and score > threshold:
                 goal_counts[goal] += 1
     
     return goal_counts

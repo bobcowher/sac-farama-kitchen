@@ -24,16 +24,16 @@ if __name__ == '__main__':
     hidden_size = 512
     learning_rate = 0.0001
     env_name = "FrankaKitchen-v1"
-    max_episode_steps = 500
+    max_episode_steps = 1000
 
     # task = "slide cabinet"
-    task = "hinge cabinet"
-    task_no_spaces = task.replace(" ", "_")
+    tasks = ["microwave", "hinge cabinet", "top burner"]
+    task_no_spaces = "omni"
 
     # Training Phase 1
 
-    env = gym.make(env_name, max_episode_steps=max_episode_steps, tasks_to_complete=[task])
-    env = RoboGymObservationWrapper(env, goal=task)
+    env = gym.make(env_name, max_episode_steps=max_episode_steps, tasks_to_complete=tasks)
+    env = RoboGymObservationWrapper(env)
 
     observation, info = env.reset()
 
@@ -58,21 +58,21 @@ if __name__ == '__main__':
 
     # Phase 1
     memory.expert_data_ratio = 0.5
-    agent.train(env=env, env_name=env_name, memory=memory, episodes=150, 
+    agent.train(task_list=tasks, env_name=env_name, memory=memory, episodes=150, 
                 batch_size=batch_size, updates_per_step=updates_per_step,
                 summary_writer_name=f"live_train_phase_1_{task_no_spaces}",
                 max_episode_steps=max_episode_steps)
 
     # Phase 2
     memory.expert_data_ratio = 0.25
-    agent.train(env=env, env_name=env_name, memory=memory, episodes=250, 
+    agent.train(task_list=tasks, env_name=env_name, memory=memory, episodes=500, 
                 batch_size=batch_size, updates_per_step=updates_per_step,
                 summary_writer_name=f"live_train_phase_2_{task_no_spaces}",
                 max_episode_steps=max_episode_steps)
 
     # Phase 3
     memory.expert_data_ratio = 0
-    agent.train(env=env, env_name=env_name, memory=memory, episodes=1000, 
+    agent.train(task_list=tasks, env_name=env_name, memory=memory, episodes=3000, 
                 batch_size=batch_size, updates_per_step=updates_per_step,
                 summary_writer_name=f"live_train_phase_3_{task_no_spaces}",
                 max_episode_steps=max_episode_steps)

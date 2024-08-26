@@ -9,6 +9,9 @@ import datetime
 from buffer import ReplayBuffer
 import time
 from gym_robotics_custom import RoboGymObservationWrapper
+import random
+import gymnasium as gym
+from itertools import combinations
 
 class Agent(object):
     def __init__(self, num_inputs, action_space, gamma, tau, alpha, target_update_interval,
@@ -94,7 +97,7 @@ class Agent(object):
         return qf1_loss.item(), qf2_loss.item(), policy_loss.item(), alpha_loss.item(), 0, alpha_tlogs.item()
 
 
-    def train(self, env, env_name, memory, episodes=1000, batch_size=64, updates_per_step=1, summary_writer_name="", max_episode_steps=100,):
+    def train(self, task_list, env_name, memory, episodes=1000, batch_size=64, updates_per_step=1, summary_writer_name="", max_episode_steps=100,):
 
         # Tensorboard
         summary_writer_name = f'runs/{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_' + summary_writer_name
@@ -104,10 +107,29 @@ class Agent(object):
         total_numsteps = 0
         updates = 0
 
-        for i_episode in range(episodes):
+        all_task_combinations = []
+        for i in range(len(task_list)):
+            all_task_combinations.extend(combinations(task_list, i + 1))
+
+        environments = []
+
+        for tasks in all_task_combinations:
+            env = gym.make(env_name, max_episode_steps=max_episode_steps, tasks_to_complete=list(tasks))
+            env = RoboGymObservationWrapper(env)
+            print(f"Created environment for task list {tasks}")
+            environments.append(env)
+        
+        print("\n", "-" * 20)
+        print(f"Created {len(environments)} environment combinations")
+        
+
+        for episode in range(episodes):
             episode_reward = 0
             episode_steps = 0
             done = False
+            
+            env : RoboGymObservationWrapper = random.choice(environments)
+
             state, _ = env.reset()
 
             while not done and episode_steps < max_episode_steps:
@@ -143,11 +165,18 @@ class Agent(object):
 
                 state = next_state
 
-            writer.add_scalar('reward/train', episode_reward, i_episode)
-            print("Episode: {}, total numsteps: {}, episode steps: {}, reward: {}".format(i_episode, total_numsteps,
+            env.reset() # Resetting so tasks to complete resets to the default value. 
+
+            episode_reward_scaled = episode_reward / len(env.env.tasks_to_complete)
+
+            writer.add_scalar('reward/train', episode_reward_scaled, episode)
+            print("Episode: {}, total numsteps: {}, episode steps: {}, reward: {}".format(episode, total_numsteps,
                                                                                         episode_steps,
-                                                                                        round(episode_reward, 2)))
-            if i_episode % 10 == 0:
+                                                                                        round(episode_reward_scaled, 2)))
+            
+            env.close()
+
+            if episode % 10 == 0:
                 self.save_checkpoint()
 
 

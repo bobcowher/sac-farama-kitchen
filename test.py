@@ -28,12 +28,12 @@ if __name__ == '__main__':
     env_name = "FrankaKitchen-v1"
 
     # task = "top burner"
-    task = "top burner"
-    task_no_spaces = task.replace(" ", "_")
+    tasks = ["microwave", "hinge cabinet", "top burner"]
+    task_no_spaces = "omni"
 
 
-    env = gym.make(env_name, max_episode_steps=max_episode_steps, tasks_to_complete=[task], render_mode='human')
-    env = RoboGymObservationWrapper(env, goal=task)
+    env = gym.make(env_name, max_episode_steps=max_episode_steps, tasks_to_complete=tasks, render_mode='human')
+    env = RoboGymObservationWrapper(env)
 
     # print(f"Obervation space: {env.observation_space}")
     print(f"Action space: {env.action_space}")

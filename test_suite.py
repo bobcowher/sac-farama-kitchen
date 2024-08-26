@@ -46,12 +46,15 @@ max_episode_steps = 500
 
 
 # Training Phase 1
-tasks = ['microwave', 'top burner']
+tasks = ['microwave', 'top burner', 'bottom burner', 'light switch', 'slide cabinet', 'hinge cabinet', 'kettle']
+tasks = ['top burner']
 
 env = gym.make(env_name, max_episode_steps=max_episode_steps, tasks_to_complete=tasks)
 env = RoboGymObservationWrapper(env)
 
 observation, info = env.reset()
+
+print(observation)
 
 observation_size = observation.shape[0]
 
@@ -63,19 +66,21 @@ agent = Agent(observation_size, env.action_space, gamma=gamma, tau=tau, alpha=al
 # Memory
 memory = ReplayBuffer(replay_buffer_size, input_size=observation_size, n_actions=env.action_space.shape[0], sad_robot=True)
 
-memory.load_from_csv(filename='checkpoints/human_memory_microwave.npz')
-
-rewards = [reward for reward in memory.reward_memory if reward > 0]
-
-print(f"found {len(rewards)} rewards in the buffer")
 
 
-print("Reward batch, no augmentation")
-state_batch, action_batch, reward_batch, next_state_batch, mask_batch = memory.sample_buffer(batch_size=16)
-print(reward_batch)
+# memory.load_from_csv(filename='checkpoints/human_memory_microwave.npz')
 
-print("Reward batch with augmentation")
-memory.augment_data = True
-state_batch, action_batch, reward_batch, next_state_batch, mask_batch = memory.sample_buffer(batch_size=16)
-print(reward_batch)
+# rewards = [reward for reward in memory.reward_memory if reward > 0]
+
+# print(f"found {len(rewards)} rewards in the buffer")
+
+
+# print("Reward batch, no augmentation")
+# state_batch, action_batch, reward_batch, next_state_batch, mask_batch = memory.sample_buffer(batch_size=16)
+# print(reward_batch)
+
+# print("Reward batch with augmentation")
+# memory.augment_data = True
+# state_batch, action_batch, reward_batch, next_state_batch, mask_batch = memory.sample_buffer(batch_size=16)
+# print(reward_batch)
 
